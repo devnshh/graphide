@@ -1,136 +1,149 @@
-# GraphIDE
+# Graphide 🛡️
 
-A research-grade AI IDE built on a VS Code fork, designed with a **4-Plane Architecture** for advanced agentic capabilities in software development.
+*The Verification Pipeline for the Age of AI Vibe Coding.*
+Turn AI-assisted development from an opaque risk into a provable, inspectable, and compliant security workflow.
 
-![Stage](https://img.shields.io/badge/Stage-1%20Complete-brightgreen)
-![Platform](https://img.shields.io/badge/Platform-Windows-blue)
-![License](https://img.shields.io/badge/License-MIT-yellow)
+---
 
-## 🎯 Current Status: Stage 1 Complete
+## 🚨 The Problem: The "Vibe Coding" Security Gap
 
-GraphIDE has completed **Stage 1: IDE Shell & IPC Foundation**, establishing the core infrastructure for AI-assisted development.
+AI-assisted coding enables developers to ship software at breakneck speeds, but it has created a massive credibility gap in security.
 
-### ✅ What's Working
-- VS Code fork branded as "GraphIDE"
-- Custom chat panel in the Auxiliary Bar (right side)
-- IPC communication with backend agent runtime
-- FastAPI backend stub receiving requests
-- Graceful error handling when backend is offline
+* *Traditional Vulnerability Scanners:* Overwhelms teams with false positives and lacks context and dataflow.
+* *LLM Chatbots:* Hallucinate vulnerabilities, suggest syntactically invalid fixes, and provide zero proof of correctness.
 
-## 🚀 Quick Start
+This creates a high-risk workflow where a single AI-suggested patch can silently introduce exploitable flaws with no audit trail.
+
+## 💡 The Solution: Graphide
+
+Graphide is not another chatbot. It is a *deterministic verification pipeline*.
+
+Instead of feeding raw, noisy code into an LLM, Graphide uses *Code Property Graphs (CPGs)* to extract precise vulnerability slices—removing up to *90% of irrelevant code* before analysis.
+
+Powered by the *OnDemand Platform, our multi-agent swarm detects vulnerabilities, explains root causes, generates fixes, and—crucially—validates them using a custom AST-based patch verifier*. We provide visual dataflow graphs as proof, not just opinions.
+
+---
+
+## 🏗️ Architecture & Pipeline
+
+Graphide operates as a multi-stage verification loop orchestrated via the OnDemand Platform.
+
+### The Workflow (Step-by-Step)
+
+1. *Ingestion:* The developer submits code (or a file) via the Graphide Frontend.
+2. *Query Generation (Agent 1 - FineTuned Model-Q):* The backend sends the code to *Model-Q* on OnDemand. It doesn't guess; it generates a precise CPG query tailored to the code structure.
+3. *CPG Slicing (Joern):* The query is executed against *Joern* (hosted on OnDemand), which extracts a code slice containing only the code paths relevant to potential vulnerabilities.
+4. *Detection & Context (Agent 3 - FineTuned Model-D & Agent 4 - Knowledge Agent):*
+* The clean slice is sent to *Model-D* (OnDemand Chat API).
+* The *Knowledge Agent* enriches the findings with real-time CVE/CWE data and historical examples, ensuring high-context analysis.
+
+
+5. *Fix Verification (Custom Tool - AST Verifier):*
+* Before showing any fix to the user, the suggested patch is passed through our custom *AST Patch Verifier*.
+* This tool parses the Abstract Syntax Tree to ensure the fix is syntactically valid and structurally sound. Broken AI code is rejected before it reaches the IDE.
+
+6. *Automated Patch Application*.
+* The verified patch is applied to the code automatically.
+
+7. *Visual Proof (Agent 2 - NanoBanana & Media API):*
+* The verified dataflow is sent to the *Media API*.
+* *NanoBanana (Agent 2)* generates a clear, visual flowchart explaining exactly how the data flows from source to sink, providing visual proof of the vulnerability.
+
+
+8. *Reporting (Report Agent):* A dedicated agent compiles all findings, chat context, and visual graphs into an audit-ready report for compliance teams.
+
+---
+
+## ⚡ Key Features
+
+* *🔍 Precision Slicing:* Uses Code Property Graphs (CPGs) to focus LLMs only on the relevant 10% of code, drastically reducing hallucinations.
+* *✅ AST Verification:* The first "Compiler-in-the-Loop" for AI security. We never suggest code that doesn't parse.
+* *📊 Visual Proof:* Don't just read about a bug—see the dataflow diagram generated instantly for every finding.
+* *🤖 OnDemand Swarm:* A coordinated team of 4+ specialized agents (Query, Detection, Visualization, Reporting) working in parallel.
+* *📜 Compliance Ready:* Automatically generates detailed audit trails, bridging the gap between fast dev teams and strict security ops.
+
+---
+
+## 🛠️ Technology Stack
+
+* *Orchestration:* [OnDemand Platform](https://on-demand.io/)
+* *Agents:*
+* *Model-Q:* Query Generation Specialist
+* *Model-D:* Vulnerability Detection Specialist
+* *NanoBanana:* Data Visualization Specialist
+* *Knowledge Agent:* RAG/Context Specialist
+
+
+* *Static Analysis:* Joern (Code Property Graph generator)
+* *Verification:* Custom Python AST Parser
+* *APIs:* OnDemand Chat API, OnDemand Media API
+* *Frontend:* Typescript/Electron.JS
+
+---
+
+## 🚀 Getting Started
 
 ### Prerequisites
-- **Node.js** v22.21.1 ([nvs](https://github.com/jasongin/nvs) recommended)
-- **Python** 3.10+ with pip
-- **Visual Studio Build Tools 2022** (Windows, with Spectre-mitigated libs)
-- **Git**
 
-### 1. Clone & Build the IDE
-```bash
-git clone <repo-url>
-cd graph_ide/ide
-npm install
-npm run compile      # Takes ~15-20 min on first build
-```
+* Node.js & npm
+* Python 3.9+
+* OnDemand API Key
+* Joern (Installed locally or via Docker)
 
-### 2. Start the Backend
-```bash
-cd graph_ide/agent-runtime
+### Installation
+
+1. *Clone the repository:*
+bash
+git clone https://github.com/yourusername/graphide.git
+cd graphide
+
+
+
+
+2. *Setup Backend:*
+bash
+cd backend
 pip install -r requirements.txt
+export ONDEMAND_API_KEY="your_key_here"
 uvicorn main:app --reload
-```
 
-### 3. Launch GraphIDE
-```bash
-cd graph_ide/ide
-.\scripts\code.bat   # Windows
-./scripts/code.sh    # Linux/macOS
-```
 
-### 4. Open the GraphIDE Panel
-- Look for the **GraphIDE** panel in the Auxiliary Bar (right side)
-- Or press `Ctrl+Shift+P` → search "GraphIDE"
 
-## 📁 Repository Structure
 
-```
-graph_ide/
-├── ide/                    # VS Code Fork (Presentation Plane)
-│   ├── src/vs/workbench/contrib/graphide/  # GraphIDE Panel
-│   └── ...
-├── agent-runtime/          # Python Backend (Control Plane)
-│   ├── main.py             # FastAPI server
-│   └── requirements.txt
-├── schemas/                # IPC Contracts (JSON Schemas)
-│   ├── ide_to_runtime_request.json
-│   └── runtime_to_ide_response.json
-├── cpg/                    # Code Property Graph (Stage 2+)
-├── rag/                    # RAG Pipeline (Stage 2+)
-└── docs/                   # Architecture Documentation
-```
+3. *Setup Frontend:*
+bash
+cd frontend
+npm install
+npm run dev
 
-## 🏗️ Architecture
 
-GraphIDE uses a **4-Plane Architecture**:
 
-| Plane | Component | Technology | Status |
-|-------|-----------|------------|--------|
-| **Presentation** | IDE Shell | VS Code Fork (TypeScript/Electron) | ✅ Stage 1 |
-| **Control** | Agent Runtime | FastAPI (Python) | ✅ Stage 1 (Stub) |
-| **Cognition** | LLM Integration | Ollama/Local LLM | 🔜 Stage 2 |
-| **Knowledge** | CPG + RAG | Joern + FAISS | 🔜 Stage 2 |
 
-## 📡 IPC Schema (Stage 0)
+4. *Run Joern Server:*
+(Ensure Joern is running on port 9000)
+bash
+./joern --server
 
-**IDE → Runtime Request:**
-```json
-{
-  "intent": "free_text",
-  "filePath": "/path/to/file.py",
-  "language": "python",
-  "codeRange": { "startLine": 10, "endLine": 20 },
-  "userQuery": "Explain this function"
-}
-```
 
-**Runtime → IDE Response:**
-```json
-{
-  "status": "success",
-  "agentOutputs": [{
-    "outputType": "markdown",
-    "markdownOutput": "This function calculates..."
-  }]
-}
-```
 
-## 🛠️ Development
 
-### Rebuild after changes
-```bash
-cd ide
-npm run compile
-```
 
-### Run backend in dev mode
-```bash
-cd agent-runtime
-uvicorn main:app --reload
-```
+---
 
-## 📋 Roadmap
+## 🏆 Hackathon Track: OnDemand
 
-- [x] **Stage 0**: Architecture & IPC Contracts
-- [x] **Stage 1**: IDE Shell & IPC Foundation
-- [ ] **Stage 2**: Joern CPG Integration
-- [ ] **Stage 3**: Local LLM + RAG Pipeline
-- [ ] **Stage 4**: Multi-agent Workflows
+Graphide creates a complete ecosystem using the OnDemand platform features:
 
-## 📄 Documentation
+* *Multi-Agent System:* Orchestrates Model-Q, Model-D, NanoBanana, and Knowledge Agents.
+* *Custom Tool Integration:* Implements a custom *AST Patch Verifier* to validate AI outputs.
+* *API Usage:* Deep integration with *Chat API* for inference and *Media API* for generating security graph visualizations.
 
-- [Architecture](docs/architecture.md)
-- [Stage 0 Decisions](docs/stage0_decisions.md)
+---
 
-## 📜 License
+## 📄 License
 
-MIT License - See [LICENSE](LICENSE) for details.
+Distributed under the MIT License. See LICENSE for more information.
+
+---
+
+Built with ❤️ by the Trust1ssues Team.
