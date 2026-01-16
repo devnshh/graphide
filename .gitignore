@@ -23,30 +23,5 @@ backend/.coverage.*
 backend/.pytest_cache/
 backend/docs/_build/
 
-# VSCode IDE folder
-# Adapted from ide/.gitignore
-ide/.DS_Store
-ide/.cache
-ide/npm-debug.log
-ide/Thumbs.db
-ide/node_modules/
-ide/.build/
-ide/.vscode/extensions/**/out/
-ide/extensions/**/dist/
-ide/out*
-ide/extensions/**/out/
-ide/build/node_modules
-ide/coverage/
-ide/test_data/
-ide/test-results/
-ide/test-results.xml
-ide/vscode.lsif
-ide/vscode.db
-/ide/.profile-oss
-ide/cli/target
-ide/cli/openssl
-ide/product.overrides.json
-ide/**/*.snap.actual
-ide/**/*.tsbuildinfo
-ide/.vscode-test
-ide/vscode-telemetry-docs/
+# IDE folder
+ide/
