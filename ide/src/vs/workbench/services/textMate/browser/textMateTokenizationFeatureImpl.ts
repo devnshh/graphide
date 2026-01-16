@@ -337,15 +337,15 @@ export class TextMateTokenizationFeature extends Disposable implements ITextMate
 	}
 
 	private _updateTheme(colorTheme: IWorkbenchColorTheme, forceUpdate: boolean): void {
-		if (!forceUpdate && this._currentTheme && this._currentTokenColorMap && equalsTokenRules(this._currentTheme.settings, colorTheme.tokenColors)
+		if (!forceUpdate && this._currentTheme && this._currentTokenColorMap && equalsTokenRules(this._currentTheme.settings as any, colorTheme.tokenColors as any)
 			&& equalArray(this._currentTokenColorMap, colorTheme.tokenColorMap) && this._currentTokenFontMap && equalArray(this._currentTokenFontMap, colorTheme.tokenFontMap)) {
 			return;
 		}
-		this._currentTheme = { name: colorTheme.label, settings: colorTheme.tokenColors };
+		this._currentTheme = { name: colorTheme.label, settings: colorTheme.tokenColors as any };
 		this._currentTokenColorMap = colorTheme.tokenColorMap;
 		this._currentTokenFontMap = colorTheme.tokenFontMap;
 
-		this._grammarFactory?.setTheme(this._currentTheme, this._currentTokenColorMap);
+		this._grammarFactory?.setTheme(this._currentTheme!, this._currentTokenColorMap);
 		const colorMap = toColorMap(this._currentTokenColorMap);
 		const colorCssRules = generateTokensCSSForColorMap(colorMap);
 		const fontCssRules = generateTokensCSSForFontMap(this._currentTokenFontMap);
@@ -354,7 +354,7 @@ export class TextMateTokenizationFeature extends Disposable implements ITextMate
 		TokenizationRegistry.setColorMap(colorMap);
 
 		if (this._currentTheme && this._currentTokenColorMap) {
-			this._threadedBackgroundTokenizerFactory.acceptTheme(this._currentTheme, this._currentTokenColorMap);
+			this._threadedBackgroundTokenizerFactory.acceptTheme(this._currentTheme!, this._currentTokenColorMap);
 		}
 	}
 

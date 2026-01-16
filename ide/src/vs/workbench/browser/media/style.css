@@ -111,13 +111,421 @@ body {
 	z-index: 1;
 	overflow: hidden;
 	color: var(--vscode-foreground);
+
+	/* ============================================
+	   NEW-AGE IDE DESIGN SYSTEM
+	   Based on Stitch-generated design
+	   ============================================ */
+
+	/* 1. Core Colors */
+	--na-bg-base: #0a0b14;
+	--na-bg-glass: rgba(30, 30, 45, 0.45);
+	--na-bg-editor: rgba(20, 20, 30, 0.7);
+	--na-bg-hover: rgba(255, 255, 255, 0.05);
+	--na-bg-active: rgba(59, 130, 246, 0.1);
+
+	/* 2. Borders */
+	--na-border: rgba(255, 255, 255, 0.08);
+	--na-border-active: rgba(59, 130, 246, 0.3);
+
+	/* 3. Accent (Blue) */
+	--na-primary: #3b82f6;
+	--na-primary-glow: 0 0 8px rgba(59, 130, 246, 0.8);
+	--na-primary-shadow: 0 4px 10px -2px rgba(59, 130, 246, 0.5);
+
+	/* 4. Text */
+	--na-text-primary: #d1d5db;
+	--na-text-muted: #9ca3af;
+
+	/* 5. Dimensions */
+	--na-radius: 8px;
+	--na-blur: 16px;
+	--na-gap: 6px;
+	/* Smaller gaps for tighter layout */
+
+	/* 6. Typography */
+	--na-font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* ============================================
+   GLOBAL OVERRIDES
+   ============================================ */
+
+/* Deep Space Background */
+.monaco-workbench {
+	background: radial-gradient(circle at top left, #1e1b4b, #0f172a, #0a0b14) !important;
+	background-attachment: fixed !important;
+	font-family: var(--na-font) !important;
+	-webkit-font-smoothing: antialiased;
+}
+
+/* ============================================
+   SHELL COMPONENTS (New-Age Style)
+   ============================================ */
+
+/* General Part Styling */
+.monaco-workbench .part {
+	border: none !important;
+}
+
+/* Title Bar - Transparent with subtle border */
+.monaco-workbench .part.titlebar {
+	background-color: rgba(0, 0, 0, 0.2) !important;
+	backdrop-filter: blur(var(--na-blur));
+	border-bottom: 1px solid var(--na-border) !important;
+}
+
+/* Activity Bar - Glass Panel */
+.monaco-workbench .part.activitybar {
+	margin: var(--na-gap);
+	border-radius: var(--na-radius);
+	background-color: var(--na-bg-glass) !important;
+	backdrop-filter: blur(var(--na-blur));
+	border: 1px solid var(--na-border) !important;
+	overflow: hidden;
+}
+
+/* Active icon glow */
+.monaco-workbench .part.activitybar .action-item.checked .action-label {
+	filter: drop-shadow(var(--na-primary-glow)) !important;
+	color: var(--na-primary) !important;
+}
+
+/* Sidebar - Glass Panel */
+.monaco-workbench .part.sidebar {
+	margin: var(--na-gap) 0 var(--na-gap) 0;
+	border-radius: var(--na-radius);
+	background-color: var(--na-bg-glass) !important;
+	backdrop-filter: blur(var(--na-blur));
+	border: 1px solid var(--na-border) !important;
+	overflow: hidden;
+}
+
+/* Sidebar inner containers - all transparent */
+.monaco-workbench .part.sidebar .composite,
+.monaco-workbench .part.sidebar .composite.title,
+.monaco-workbench .part.sidebar .composite-bar,
+.monaco-workbench .part.sidebar .title-actions,
+.monaco-workbench .part.sidebar .actions-container,
+.monaco-workbench .part.sidebar .monaco-action-bar {
+	background-color: transparent !important;
+}
+
+/* Sidebar title/header bar */
+.monaco-workbench .part.sidebar>.title,
+.monaco-workbench .part.sidebar>.composite.title {
+	background-color: transparent !important;
+}
+
+/* Tree/list containers in sidebar */
+.monaco-workbench .part.sidebar .tree-explorer-viewlet-tree-view,
+.monaco-workbench .part.sidebar .explorer-folders-view,
+.monaco-workbench .part.sidebar .monaco-scrollable-element,
+.monaco-workbench .part.sidebar .monaco-list-rows {
+	background-color: transparent !important;
+}
+
+/* Sidebar Header */
+.monaco-workbench .part.sidebar .title {
+	text-transform: uppercase !important;
+	font-size: 10px !important;
+	font-weight: 700 !important;
+	letter-spacing: 0.15em !important;
+	color: var(--na-text-muted) !important;
+	padding: 12px 16px !important;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Sidebar Section Headers (e.g., "PROJECT-X") */
+.monaco-workbench .part.sidebar .pane-header {
+	background-color: transparent !important;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Explorer folder/file titles with primary color for project root */
+.monaco-workbench .explorer-viewlet .monaco-tl-twistie+.monaco-icon-label-container .label-name {
+	color: var(--na-text-primary) !important;
+}
+
+/* Auxiliary Bar (AI Assistant / Graphide) - Glass Panel */
+.monaco-workbench .part.auxiliarybar {
+	margin: var(--na-gap) var(--na-gap) var(--na-gap) 0;
+	border-radius: var(--na-radius);
+	background-color: var(--na-bg-glass) !important;
+	backdrop-filter: blur(var(--na-blur));
+	border: 1px solid var(--na-border) !important;
+	overflow: hidden;
+}
+
+/* Auxiliary Bar Header (AI ASSISTANT) */
+.monaco-workbench .part.auxiliarybar .pane-header {
+	background-color: rgba(59, 130, 246, 0.05) !important;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Editor - Darker Glass */
+.monaco-workbench .part.editor {
+	margin: var(--na-gap);
+	border-radius: var(--na-radius);
+	background-color: var(--na-bg-editor) !important;
+	backdrop-filter: blur(var(--na-blur));
+	border: 1px solid var(--na-border) !important;
+	overflow: hidden;
+}
+
+/* Editor Content Area - Even Darker */
+.monaco-workbench .editor-instance,
+.monaco-workbench .monaco-editor,
+.monaco-workbench .monaco-editor-background {
+	background-color: rgba(15, 15, 25, 0.85) !important;
+}
+
+/* Editor Gutter (Line Numbers) */
+.monaco-workbench .monaco-editor .margin {
+	background-color: transparent !important;
+}
+
+.monaco-workbench .monaco-editor .line-numbers {
+	color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Panel (Terminal) - Glass Panel */
+.monaco-workbench .part.panel {
+	margin: 0 var(--na-gap) var(--na-gap) var(--na-gap);
+	border-radius: var(--na-radius);
+	background-color: var(--na-bg-glass) !important;
+	backdrop-filter: blur(var(--na-blur));
+	border: 1px solid var(--na-border) !important;
+	overflow: hidden;
+}
+
+/* Status Bar - SOLID BLUE (Key Design Element) */
+.monaco-workbench .part.statusbar {
+	margin: 0 !important;
+	border-radius: 0 !important;
+	background-color: var(--na-primary) !important;
+	backdrop-filter: none !important;
+	border: none !important;
+	box-shadow: 0 -4px 10px rgba(59, 130, 246, 0.2) !important;
+	color: white !important;
+}
+
+.monaco-workbench .part.statusbar .statusbar-item a {
+	color: white !important;
+}
+
+.monaco-workbench .part.statusbar .statusbar-item a:hover {
+	background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* ============================================
+   EDITOR TABS (Glow Tabs)
+   ============================================ */
+
+/* Editor header area - the entire top section */
+.monaco-workbench .part.editor .editor-group-container>.title,
+.monaco-workbench .part.editor .tabs-and-actions-container,
+.monaco-workbench .part.editor .editor-group-header {
+	background-color: transparent !important;
+}
+
+/* Tab Container */
+.monaco-workbench .part.editor .tabs-container {
+	background-color: transparent !important;
+	border-bottom: 1px solid var(--na-border) !important;
+	padding: 0 8px !important;
+}
+
+/* Tabs wrapper */
+.monaco-workbench .part.editor .monaco-scrollable-element.tabs {
+	background-color: transparent !important;
+}
+
+/* Individual Tabs */
+.monaco-workbench .part.editor .tab {
+	border: none !important;
+	background-color: transparent !important;
+	color: var(--na-text-muted) !important;
+	border-radius: 8px 8px 0 0 !important;
+	transition: all 0.2s ease !important;
+}
+
+/* Active Tab with Glow */
+.monaco-workbench .part.editor .tab.active {
+	background-color: var(--na-bg-hover) !important;
+	color: white !important;
+	border-bottom: 2px solid var(--na-primary) !important;
+	box-shadow: var(--na-primary-shadow) !important;
+}
+
+/* Hover State */
+.monaco-workbench .part.editor .tab:hover:not(.active) {
+	background-color: var(--na-bg-hover) !important;
+}
+
+/* Breadcrumbs */
+.monaco-workbench .monaco-breadcrumbs {
+	background-color: rgba(0, 0, 0, 0.1) !important;
+	border-bottom: 1px solid var(--na-border) !important;
+	padding: 4px 12px !important;
+}
+
+.monaco-workbench .monaco-breadcrumbs .codicon {
+	opacity: 0.5 !important;
+}
+
+/* ============================================
+   LISTS & TREES (File Explorer)
+   ============================================ */
+
+/* Tree Row Base */
+.monaco-workbench .monaco-list-row {
+	transition: background-color 0.1s ease !important;
+}
+
+/* Tree Row Selection - Blue tint with right border */
+.monaco-workbench .monaco-list-row.selected {
+	background-color: var(--na-bg-active) !important;
+	border-right: 2px solid var(--na-primary) !important;
+}
+
+/* Tree Row Hover */
+.monaco-workbench .monaco-list-row:hover {
+	background-color: var(--na-bg-hover) !important;
+}
+
+/* ============================================
+   GLOBAL BACKGROUND OVERRIDES
+   Remove all black backgrounds
+   ============================================ */
+
+/* All List containers */
+.monaco-workbench .monaco-list,
+.monaco-workbench .monaco-tree {
+	background-color: transparent !important;
+}
+
+/* All pane bodies */
+.monaco-workbench .pane-body,
+.monaco-workbench .content,
+.monaco-workbench .split-view-view {
+	background-color: transparent !important;
+}
+
+/* Explorer specific */
+.monaco-workbench .explorer-viewlet,
+.monaco-workbench .explorer-viewlet .explorer-folders-view,
+.monaco-workbench .explorer-viewlet .monaco-list {
+	background-color: transparent !important;
+}
+
+/* Auxiliary bar / Graphide panel backgrounds */
+.monaco-workbench .part.auxiliarybar .content,
+.monaco-workbench .part.auxiliarybar .pane-body,
+.monaco-workbench .part.auxiliarybar .monaco-list,
+.monaco-workbench .part.auxiliarybar .split-view-view {
+	background-color: transparent !important;
+}
+
+/* Chat/Input widgets */
+.monaco-workbench .interactive-input-part,
+.monaco-workbench .interactive-session,
+.monaco-workbench .chat-widget {
+	background-color: transparent !important;
+}
+
+/* Chat input box */
+.monaco-workbench .interactive-input-editor,
+.monaco-workbench .chat-input-container {
+	background-color: var(--na-bg-hover) !important;
+	border: 1px solid var(--na-border) !important;
+	border-radius: var(--na-radius) !important;
+}
+
+/* Suggested actions area */
+.monaco-workbench .interactive-session-followups,
+.monaco-workbench .chat-followups {
+	background-color: transparent !important;
+}
+
+/* Quick input / Command palette */
+.monaco-workbench .quick-input-widget {
+	background-color: var(--na-bg-glass) !important;
+	backdrop-filter: blur(var(--na-blur)) !important;
+	border: 1px solid var(--na-border) !important;
+	border-radius: var(--na-radius) !important;
+}
+
+/* Monaco editor containers (minimap area, etc) */
+.monaco-workbench .monaco-editor .minimap,
+.monaco-workbench .monaco-editor .decorationsOverviewRuler {
+	background-color: transparent !important;
+}
+
+/* SCM, Debug, Extensions viewlet backgrounds */
+.monaco-workbench .scm-viewlet,
+.monaco-workbench .debug-viewlet,
+.monaco-workbench .extensions-viewlet {
+	background-color: transparent !important;
+}
+
+/* Welcome page */
+.monaco-workbench .welcomePage {
+	background-color: transparent !important;
+}
+
+/* Settings editor */
+.monaco-workbench .settings-editor {
+	background-color: transparent !important;
+}
+
+/* Panel (terminal) content */
+.monaco-workbench .part.panel .content,
+.monaco-workbench .part.panel .pane-body {
+	background-color: transparent !important;
+}
+
+/* Terminal background */
+.monaco-workbench .terminal-wrapper,
+.monaco-workbench .xterm {
+	background-color: transparent !important;
+}
+
+.monaco-workbench .xterm-viewport {
+	background-color: transparent !important;
+}
+
+/* Dropdown menu backgrounds */
+.monaco-workbench .monaco-menu,
+.monaco-workbench .context-view {
+	background-color: var(--na-bg-glass) !important;
+	backdrop-filter: blur(var(--na-blur)) !important;
+	border: 1px solid var(--na-border) !important;
+	border-radius: var(--na-radius) !important;
+}
+
+/* Dialog/modal backgrounds */
+.monaco-workbench .dialog-shadow {
+	background-color: rgba(0, 0, 0, 0.5) !important;
+}
+
+.monaco-workbench .dialog-box {
+	background-color: var(--na-bg-glass) !important;
+	backdrop-filter: blur(var(--na-blur)) !important;
+	border: 1px solid var(--na-border) !important;
+	border-radius: var(--na-radius) !important;
+}
+
+/* Notification center */
+.monaco-workbench .notifications-center,
+.monaco-workbench .notification-toast {
+	background-color: var(--na-bg-glass) !important;
+	backdrop-filter: blur(var(--na-blur)) !important;
 }
 
 .monaco-workbench.web {
 	touch-action: none;
-	/* Disable browser handling of all panning and zooming gestures. Removes 300ms touch delay. */
 	overscroll-behavior: none;
-	/* Prevent bounce effect */
 }
 
 .monaco-workbench.border:not(.fullscreen) {
@@ -238,17 +646,69 @@ body {
 	}
 }
 
-.monaco-workbench .context-view {
-	-webkit-app-region: no-drag;
+/* ============================================
+   INTERACTIVE COMPONENTS (New-Age Style)
+   ============================================ */
+
+/* Buttons - Clean Blue */
+.monaco-workbench .monaco-button {
+	border-radius: var(--na-radius) !important;
+	border: none !important;
+	background-color: var(--na-primary) !important;
+	background-image: none !important;
+	color: #fff !important;
+	font-weight: 500 !important;
+	box-shadow: var(--na-primary-shadow) !important;
+	transition: all 0.2s ease-out !important;
+	padding: 8px 16px !important;
 }
 
-.monaco-workbench .codicon {
-	color: var(--vscode-icon-foreground);
+.monaco-workbench .monaco-button:hover {
+	filter: brightness(1.1);
+	box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4) !important;
 }
 
-.monaco-workbench .codicon[class*='codicon-'] {
-	font-size: 16px;
-	/* sets font-size for codicons in workbench (https://github.com/microsoft/vscode/issues/98495) */
+/* Secondary/Ghost Buttons */
+.monaco-workbench .monaco-button.secondary {
+	background-color: var(--na-bg-hover) !important;
+	border: 1px solid var(--na-border) !important;
+	color: var(--na-text-primary) !important;
+	box-shadow: none !important;
+}
+
+/* Inputs */
+.monaco-workbench .monaco-inputbox {
+	border-radius: var(--na-radius) !important;
+	background-color: var(--na-bg-hover) !important;
+	border: 1px solid var(--na-border) !important;
+	transition: all 0.2s ease !important;
+}
+
+.monaco-workbench .monaco-inputbox.synthetic-focus,
+.monaco-workbench .monaco-inputbox input:focus {
+	background-color: rgba(255, 255, 255, 0.08) !important;
+	border-color: var(--na-primary) !important;
+	box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
+	outline: none !important;
+}
+
+/* Dropdowns */
+.monaco-workbench select,
+.monaco-workbench .monaco-dropdown {
+	border-radius: var(--na-radius) !important;
+	background-color: var(--na-bg-glass) !important;
+	border: 1px solid var(--na-border) !important;
+	color: var(--na-text-primary) !important;
+}
+
+/* Scrollbars */
+.monaco-workbench .slider {
+	background: rgba(255, 255, 255, 0.1) !important;
+	border-radius: 10px !important;
+}
+
+.monaco-workbench .slider:hover {
+	background: rgba(255, 255, 255, 0.2) !important;
 }
 
 .monaco-workbench .predefined-file-icon[class*='codicon-']::before {

@@ -664,6 +664,15 @@ export class CodeWindow extends BaseWindow implements ICodeWindow {
 				v8CacheOptions: this.environmentMainService.useCodeCache ? 'bypassHeatCheck' : 'none',
 			});
 
+			// --- New-Gen UI: Enable Transparency ---
+			options.transparent = true;
+			options.backgroundColor = '#00000000'; // Fully transparent
+			if (isMacintosh) {
+				options.vibrancy = 'fullscreen-ui';
+				options.visualEffectState = 'active';
+			}
+			// ---------------------------------------
+
 			// Create the browser window
 			mark('code/willCreateCodeBrowserWindow');
 			this._win = new electron.BrowserWindow(options);
