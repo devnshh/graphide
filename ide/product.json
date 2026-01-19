@@ -1,6 +1,6 @@
 {
-	"nameShort": "GraphIDE",
-	"nameLong": "GraphIDE",
+	"nameShort": "Graphide",
+	"nameLong": "Graphide",
 	"applicationName": "graphide",
 	"dataFolderName": ".vscode-oss",
 	"win32MutexName": "vscodeoss",

@@ -3,6 +3,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 import uvicorn
+from dotenv import load_dotenv
+
+load_dotenv()
 try:
     from .config import settings
     from .routes import scan, chat, slice, media, verify

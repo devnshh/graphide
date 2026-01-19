@@ -31,6 +31,7 @@ class ChatRequest(BaseModel):
     query: str
     context: Optional[Dict[str, Any]] = None
     files: Optional[List[FileContext]] = None
+    sessionId: str 
     stage: str # "Q", "D", "KB", "Report", "General"
 
 class SliceRequest(BaseModel):
@@ -62,7 +63,11 @@ class StandardResponse(BaseModel):
     data: Optional[Dict[str, Any]] = None
 
 class ScanResponse(StandardResponse):
-    scan_id: str
+    status: str  # "success", "error", "processing"
+    agentOutputs: Optional[List[AgentOutput]] = None
+    patchProposals: Optional[List[dict]] = None
+    validationStatus: Optional[dict] = None
+
 
 class ChatResponse(StandardResponse):
     agent_outputs: List[AgentOutput]

@@ -11,9 +11,8 @@ Nothing here is invented. Everything is directly mapped to the architecture you 
 ```
 VSCode Fork
  ├─ File Watcher
- ├─ “Analyse File(s)” Command
+ ├─ “Analyse File(s)” Command on Analysis Panel
  ├─ Gutter Line Highlighter
- ├─ Analysis Panel
  ├─ API Client (Backend)
  └─ Patch Applier Agent (Local)
 ```
@@ -132,21 +131,8 @@ CVE/CWE Knowledge Base (Vector DB)
 
 ---
 
-# **4. Team Assignment Matrix**
 
-| Component | Engineer |
-| :--- | :--- |
-| VSCode Fork & Patch Applier | **A** |
-| Backend & Chat API Orchestration | **B** |
-| Joern & CPG Pipeline | **B** |
-| NanoBanana Agent & Media API | **C** |
-| AST Patch Verifier | **C** |
-| Report Builder | **C** |
-| Models (Q & D) Integration | **C** |
-
----
-
-# **5. Phased Execution**
+# **4. Phased Execution**
 
 ### **Phase 1: Core Analysis Loop**
 *   VSCode -> /scan -> Backend
@@ -169,7 +155,7 @@ CVE/CWE Knowledge Base (Vector DB)
 
 ---
 
-# **6. Summary**
+# **5. Summary**
 
 This updated flow introduces a highly agentic architecture where specific agents (NanoBanana, Knowledge, Local Applier) and tools (Verifier, Report Builder) handle specialized tasks, coordinated via a central Chat API on the Backend. This ensures:
 1.  **Visual Clarity**: Via NanoBanana flowcharts.

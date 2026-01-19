@@ -364,7 +364,7 @@ import './contrib/typeHierarchy/browser/typeHierarchy.contribution.js';
 import './contrib/codeEditor/browser/outline/documentSymbolsOutline.js';
 import './contrib/outline/browser/outline.contribution.js';
 
-// GraphIDE (Stage 1: Chat Panel with IPC)
+// Graphide (Stage 1: Chat Panel with IPC)
 import './contrib/graphide/browser/graphide.contribution.js';
 
 // Language Detection
