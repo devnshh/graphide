@@ -135,6 +135,3 @@ Distributed under the MIT License. See LICENSE for more information.
 ---
 
 Built with ❤️ by the Trust1ssues Team.
-
-
-{"status":"success","message":null,"data":null,"agent_outputs":[{"agentName":"Q","markdownOutput":"Hello! How can I assist you with generating Joern CPGQL queries for your vulnerability analysis? Please provide some details or specify the type of vulnerability you're interested in analyzing.","metadata":{"raw_response":{"message":"Chat query submitted successfully","data":{"sessionId":"696ac9871ef6faf0c2820510","messageId":"696ac9891ef6faf0c2820511","answer":"Hello! How can I assist you with generating Joern CPGQL queries for your vulnerability analysis? Please provide some details or specify the type of vulnerability you're interested in analyzing.","statusLogs":[{"statusType":"fulfilling","statusMessage":"Fulfilling the prompt...","time":"2026-01-16T23:28:09Z"},{"statusType":"fulfillment_completed","statusMessage":"Fulfillment completed","answer":"Hello! How can I assist you with generating Joern CPGQL queries for your vulnerability analysis? Please provide some details or specify the type of vulnerability you're interested in analyzing.","time":"2026-01-16T23:28:10Z"}],"metrics":{"inputTokens":496,"outputTokens":35,"totalTokens":531,"ragTimeSec":0,"fulfillmentTimeSec":1.37,"totalTimeSec":1.37},"status":"completed"}}}}]}
