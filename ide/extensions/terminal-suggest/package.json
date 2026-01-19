@@ -1,0 +1,6 @@
+{
+    "name": "terminal-suggest-dummy",
+    "version": "0.0.0",
+    "description": "Dummy package to satisfy build script",
+    "dependencies": {}
+}

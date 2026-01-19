@@ -1,4 +1,3 @@
-from .AgentClient import AgentClient, agent_client
 from .JoernManager import JoernManager
 from .Orchestrator import orchestrator
 from .Utils import read_file_content

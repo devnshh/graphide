@@ -1,0 +1,482 @@
+/*---------------------------------------------------------------------------------------------
+ *  GraphIDE Panel Styles
+ *  Follows VS Code design patterns: flat, dense, accessible
+ *--------------------------------------------------------------------------------------------*/
+
+/* ============================================================================
+   Design Tokens
+   ============================================================================ */
+
+.graphide-panel {
+    /* ========== Spacing Grid (4px base) ========== */
+    --graphide-space-xs: 4px;
+    --graphide-space-sm: 8px;
+    --graphide-space-md: 12px;
+    --graphide-space-lg: 16px;
+
+    /* ========== Typography Scale ========== */
+    --graphide-font-size-xs: 11px;
+    /* Meta/system text */
+    --graphide-font-size-sm: 12px;
+    /* Section headers */
+    --graphide-font-size-base: 13px;
+    /* Primary content */
+    --graphide-line-height: 1.4;
+    /* Optimized for narrow sidebar */
+
+    /* ========== Tab Styling ========== */
+    --graphide-tab-active-bg: var(--vscode-sideBar-background);
+    --graphide-tab-active-text: var(--vscode-foreground);
+    --graphide-tab-inactive-text: var(--vscode-descriptionForeground);
+
+    /* ========== Semantic Colors ========== */
+    --graphide-error-border: var(--vscode-errorForeground);
+    --graphide-error-bg: color-mix(in srgb, var(--vscode-errorForeground) 8%, transparent);
+    --graphide-warning-border: var(--vscode-notificationsWarningIcon-foreground);
+    --graphide-warning-bg: color-mix(in srgb, var(--vscode-notificationsWarningIcon-foreground) 8%, transparent);
+    --graphide-success-color: var(--vscode-testing-iconPassed);
+
+    /* ========== Density Tokens (Optimized) ========== */
+    --graphide-row-height: 22px;
+    --graphide-message-padding-v: 6px;
+    --graphide-message-padding-h: 10px;
+
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: var(--vscode-sideBar-background);
+}
+
+/* Density: Compact */
+.graphide-panel.graphide-compact {
+    --graphide-row-height: 20px;
+    --graphide-message-padding-v: 4px;
+    --graphide-message-padding-h: 8px;
+}
+
+/* Density: Comfortable */
+.graphide-panel.graphide-comfortable {
+    --graphide-row-height: 26px;
+    --graphide-message-padding-v: 8px;
+    --graphide-message-padding-h: 12px;
+}
+
+/* ============================================================================
+   Header / Title Bar
+   ============================================================================ */
+
+.graphide-header {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 0 8px;
+    height: 35px;
+    border-bottom: 1px solid var(--vscode-panel-border);
+    flex-shrink: 0;
+}
+
+/* Remove redundant title - panel already shows "ANALYZE CODE" in tab */
+.graphide-title {
+    display: none;
+}
+
+.graphide-actions {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+/* ============================================================================
+   Toolbar Actions (Compact, not hero buttons)
+   ============================================================================ */
+
+.graphide-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--vscode-panel-border);
+    flex-shrink: 0;
+}
+
+.graphide-toolbar-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--vscode-foreground);
+    background: transparent;
+    border: 1px solid var(--vscode-input-border, transparent);
+    border-radius: 4px;
+    cursor: pointer;
+    height: var(--graphide-row-height);
+    line-height: 1;
+}
+
+.graphide-toolbar-btn:hover {
+    background: var(--vscode-toolbar-hoverBackground);
+}
+
+.graphide-toolbar-btn:focus-visible {
+    outline: 2px solid var(--vscode-focusBorder);
+    outline-offset: -1px;
+}
+
+/* Primary action - demoted from hero blue to compact text-style */
+.graphide-toolbar-btn.primary {
+    background: transparent;
+    color: var(--vscode-textLink-foreground);
+    border: 1px solid color-mix(in srgb, var(--vscode-textLink-foreground) 40%, transparent);
+    font-weight: 500;
+}
+
+.graphide-toolbar-btn.primary:hover {
+    background: var(--vscode-toolbar-hoverBackground);
+    border-color: var(--vscode-textLink-foreground);
+}
+
+/* ============================================================================
+   Icon Buttons (Clear, Settings, etc.)
+   ============================================================================ */
+
+.graphide-icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    color: var(--vscode-icon-foreground);
+    cursor: pointer;
+}
+
+.graphide-icon-btn:hover {
+    background: var(--vscode-toolbar-hoverBackground);
+}
+
+.graphide-icon-btn:focus-visible {
+    outline: 2px solid var(--vscode-focusBorder);
+    outline-offset: -1px;
+}
+
+/* ============================================================================
+   Messages Container
+   ============================================================================ */
+
+.graphide-messages {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 8px 0;
+}
+
+/* ============================================================================
+   Message Styling (Flat, not cards)
+   ============================================================================ */
+
+.graphide-message {
+    padding: var(--graphide-message-padding-v) var(--graphide-message-padding-h);
+    font-size: var(--graphide-font-size-base);
+    line-height: var(--graphide-line-height);
+    border-radius: 8px;
+    transition: background-color 100ms ease-out;
+    margin: var(--graphide-space-sm) var(--graphide-space-md);
+    /* Chat box styling */
+    background: var(--vscode-editor-background);
+    border: 1px solid var(--vscode-panel-border);
+}
+
+.graphide-message+.graphide-message {
+    margin-top: var(--graphide-space-sm);
+}
+
+.graphide-message-role {
+    display: flex;
+    align-items: center;
+    gap: var(--graphide-space-sm);
+    font-size: var(--graphide-font-size-sm);
+    font-weight: 600;
+    margin-bottom: var(--graphide-space-xs);
+    color: var(--vscode-foreground);
+}
+
+.graphide-message-role .codicon {
+    font-size: 14px;
+}
+
+.graphide-message-content {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    color: var(--vscode-foreground);
+}
+
+/* Hover state for interactivity feedback */
+.graphide-message:hover {
+    background: color-mix(in srgb, var(--vscode-list-hoverBackground) 50%, transparent);
+}
+
+/* Focus state for keyboard navigation */
+.graphide-message:focus-visible {
+    outline: 2px solid var(--vscode-focusBorder);
+    outline-offset: -2px;
+}
+
+/* User messages - blue tint with left accent */
+.graphide-message-user {
+    background: color-mix(in srgb, var(--vscode-textLink-foreground) 10%, var(--vscode-editor-background));
+    border-left: 3px solid var(--vscode-textLink-foreground);
+}
+
+/* Assistant/System messages - neutral with accent */
+.graphide-message-system {
+    background: var(--vscode-editorWidget-background);
+    border-left: 3px solid var(--vscode-descriptionForeground);
+}
+
+/* ============================================================================
+   Markdown Content Styling
+   ============================================================================ */
+
+.graphide-message-content h1,
+.graphide-message-content h2,
+.graphide-message-content h3 {
+    margin: var(--graphide-space-sm) 0 var(--graphide-space-xs);
+    font-weight: 600;
+    color: var(--vscode-foreground);
+}
+
+.graphide-message-content h1 {
+    font-size: 1.3em;
+}
+
+.graphide-message-content h2 {
+    font-size: 1.15em;
+}
+
+.graphide-message-content h3 {
+    font-size: 1.05em;
+}
+
+.graphide-message-content p {
+    margin: var(--graphide-space-xs) 0;
+}
+
+.graphide-message-content code {
+    background: var(--vscode-textCodeBlock-background);
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: var(--vscode-editor-font-family);
+    font-size: 0.9em;
+}
+
+.graphide-message-content pre {
+    background: var(--vscode-textCodeBlock-background);
+    padding: var(--graphide-space-sm);
+    border-radius: 4px;
+    overflow-x: auto;
+    margin: var(--graphide-space-sm) 0;
+}
+
+.graphide-message-content pre code {
+    background: transparent;
+    padding: 0;
+}
+
+.graphide-message-content ul,
+.graphide-message-content ol {
+    margin: var(--graphide-space-xs) 0;
+    padding-left: 1.5em;
+}
+
+.graphide-message-content li {
+    margin: 2px 0;
+}
+
+.graphide-message-content strong {
+    font-weight: 600;
+    color: var(--vscode-foreground);
+}
+
+.graphide-message-content em {
+    font-style: italic;
+}
+
+.graphide-message-content a {
+    color: var(--vscode-textLink-foreground);
+    text-decoration: none;
+}
+
+.graphide-message-content a:hover {
+    text-decoration: underline;
+}
+
+.graphide-message-content blockquote {
+    border-left: 3px solid var(--vscode-textBlockQuote-border);
+    padding-left: var(--graphide-space-sm);
+    margin: var(--graphide-space-sm) 0;
+    color: var(--vscode-textBlockQuote-foreground);
+}
+
+/* ============================================================================
+   Error & Warning States (Semantic styling)
+   ============================================================================ */
+
+.graphide-message-error {
+    border-left: 2px solid var(--graphide-error-border);
+    background: var(--graphide-error-bg);
+    padding-left: calc(var(--graphide-message-padding-h) - 2px);
+}
+
+.graphide-message-error .graphide-message-role {
+    color: var(--vscode-errorForeground);
+}
+
+.graphide-message-warning {
+    border-left: 2px solid var(--graphide-warning-border);
+    background: var(--graphide-warning-bg);
+    padding-left: calc(var(--graphide-message-padding-h) - 2px);
+}
+
+.graphide-message-warning .graphide-message-role {
+    color: var(--vscode-notificationsWarningIcon-foreground);
+}
+
+/* ============================================================================
+   Input Area
+   ============================================================================ */
+
+.graphide-input-wrapper {
+    padding: 8px 12px 12px;
+    border-top: 1px solid var(--vscode-panel-border);
+    flex-shrink: 0;
+}
+
+.graphide-input-container {
+    display: flex;
+    gap: 6px;
+    background: var(--vscode-input-background);
+    border: 1px solid var(--vscode-input-border, transparent);
+    border-radius: 6px;
+    padding: 6px 8px;
+    align-items: flex-end;
+}
+
+.graphide-input-container:focus-within {
+    border-color: var(--vscode-focusBorder);
+}
+
+.graphide-input {
+    flex: 1;
+    resize: none;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--vscode-input-foreground);
+    font-family: var(--vscode-font-family);
+    font-size: 13px;
+    line-height: 1.4;
+    min-height: 20px;
+    max-height: 120px;
+}
+
+.graphide-input::placeholder {
+    color: var(--vscode-input-placeholderForeground);
+}
+
+.graphide-send-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    color: var(--vscode-icon-foreground);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.graphide-send-btn:hover {
+    background: var(--vscode-toolbar-hoverBackground);
+}
+
+.graphide-send-btn:focus-visible {
+    outline: 2px solid var(--vscode-focusBorder);
+    outline-offset: -1px;
+}
+
+.graphide-send-btn:disabled,
+.graphide-send-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ============================================================================
+   Agent State Indicator (Issue 7: Mental Model Clarity)
+   ============================================================================ */
+
+.graphide-agent-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    font-size: 11px;
+    color: var(--vscode-descriptionForeground);
+    background: var(--vscode-editorWidget-background);
+    border-radius: 4px;
+}
+
+.graphide-agent-status .status-indicator {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--vscode-testing-iconPassed);
+}
+
+.graphide-agent-status.inactive .status-indicator {
+    background: var(--vscode-descriptionForeground);
+}
+
+.graphide-agent-status.error .status-indicator {
+    background: var(--vscode-errorForeground);
+}
+
+/* ============================================================================
+   High Contrast Mode Overrides
+   ============================================================================ */
+
+.hc-black .graphide-message,
+.hc-light .graphide-message {
+    border-top: 1px solid var(--vscode-contrastBorder);
+}
+
+.hc-black .graphide-message-error,
+.hc-light .graphide-message-error {
+    border-left-width: 3px;
+}
+
+.hc-black .graphide-message-warning,
+.hc-light .graphide-message-warning {
+    border-left-width: 3px;
+}
+
+.hc-black .graphide-toolbar-btn,
+.hc-light .graphide-toolbar-btn {
+    border: 1px solid var(--vscode-contrastBorder);
+}
+
+.hc-black .graphide-icon-btn:focus-visible,
+.hc-light .graphide-icon-btn:focus-visible,
+.hc-black .graphide-toolbar-btn:focus-visible,
+.hc-light .graphide-toolbar-btn:focus-visible,
+.hc-black .graphide-send-btn:focus-visible,
+.hc-light .graphide-send-btn:focus-visible {
+    outline-width: 2px;
+}

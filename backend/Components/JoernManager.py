@@ -1,394 +1,235 @@
-from enum import Enum
 import json
-import re
-import time
-import subprocess
-from typing import List, Dict, Tuple, Any, Optional
+import asyncio
+import nest_asyncio
+from typing import List, Tuple, Any, Optional, Dict
 from cpgqls_client import CPGQLSClient, import_code_query, delete_query
 
-
-class QueryStatus(Enum):
-    SUCCESSFUL = 1
-    EMPTYRESULT = 2
-    ERROR = 3
-
+class JoernException(Exception):
+    """Custom exception for Joern-related errors"""
+    pass
 
 class JoernManager:
     """
-    Manages all interactions with Joern server, including:
-    - Server health monitoring and recreation
-    - Running queries
-    - Loading and deleting projects
-    - Extracting paths and other data from Joern
+    Manages interactions with Joern server for real-time backend service.
     """
     
-    def __init__(self, port: int, compose_file: str):
+    def __init__(self, endpoint: str = "localhost:8080"):
         """
-        Initialize a Joern Manager for a specific port
+        Initialize a Joern Manager.
         
         Args:
-            port: Joern server port number
-            compose_file: Docker compose file path for server recreation
+            endpoint: Joern server endpoint (e.g., localhost:8080)
         """
-        self.port = port
-        self.compose_file = compose_file
-        self.server_name = f"joern_server_{port}"
-        self.joern_client = CPGQLSClient(f"localhost:{port}")
-        
-    def check_server_health(self) -> bool:
-        """
-        Check if the Joern server is healthy by running a simple query
-        
-        Returns:
-            Boolean indicating if server is healthy
-        """
-        try:
-            status, _ = self.run_query("val x = 1")
-            return status == QueryStatus.SUCCESSFUL
-        except Exception:
-            return False
-    
-    def recreate_server(self) -> bool:
-        """
-        Recreate the Joern server to address memory issues
-        
-        Returns:
-            Boolean indicating if server recreation was successful
-        """
-        try:
-            # Initial small delay to prevent overwhelming the system
-            time.sleep(2)
-            print(f"Starting recreation of server: {self.server_name}")
+        self.endpoint = endpoint
+        self.client = None
+        # Patch asyncio to allow nested loops (critical for CPGQLSClient)
+        nest_asyncio.apply()
+        self._connect()
 
-            # Force recreate the specific service
-            subprocess.run([
-                'docker', 'compose', 
-                '-f', self.compose_file, 
-                'up', '-d', 
-                '--force-recreate', 
-                self.server_name
-            ], check=True)
-
-            # Wait for service to be fully operational
-            is_healthy = self._wait_for_server_health()
-            
-            if is_healthy:
-                print(f"Server {self.server_name} recreated and verified successfully")
-            else:
-                print(f"Server {self.server_name} may not be fully operational")
-            
-            return is_healthy
-        except subprocess.CalledProcessError as e:
-            print(f"Error recreating service {self.server_name}: {e}")
-            return False
+    def _connect(self):
+        """Attempt to connect to the CPGQLS server"""
+        try:
+            self.client = CPGQLSClient(self.endpoint)
         except Exception as e:
-            print(f"Unexpected error with service {self.server_name}: {e}")
-            return False
+            # Log but don't crash, allowing backend to start without Joern initially
+            print(f"Warning: Failed to connect to Joern server at {self.endpoint}: {str(e)}")
+            self.client = None
 
-    def _wait_for_server_health(self, max_wait: int = 180, check_interval: int = 20) -> bool:
+    def _ensure_connected(self):
+        """Ensure we have a client before executing commands"""
+        if not self.client:
+            self._connect()
+        if not self.client:
+            raise JoernException(f"Joern server is not available at {self.endpoint}")
+        
+    async def run_query(self, query: str) -> Tuple[bool, str]:
         """
-        Wait for a service to be fully operational
-        
-        Args:
-            max_wait: Maximum time to wait (in seconds)
-            check_interval: Time between health checks (in seconds)
-        
-        Returns:
-            Boolean indicating if service became healthy
-        """
-        total_waited = 0
-        
-        while total_waited < max_wait:
-            try:
-                # Run query to check if the Joern server is ready to accept queries
-                if self.check_server_health():
-                    print(f"Joern server {self.server_name} is ready to accept requests.")
-                    return True
-                    
-                # Wait before next check
-                print(f"Waiting before next check for server: {self.server_name}")
-                    
-                time.sleep(check_interval)
-                total_waited += check_interval
-            
-            except Exception as e:
-                print(f"Error checking health for {self.server_name}: {e}")
-                time.sleep(check_interval)
-                total_waited += check_interval
-        
-        print(f"Server {self.server_name} did not become healthy within {max_wait} seconds")
-        return False
-    
-    def run_query(self, query: str) -> Tuple[QueryStatus, str]:
-        """
-        Run a Joern query on the CPG of source code
+        Run a single Joern query.
         
         Args:
             query: The CPGQL query to execute
             
         Returns:
-            Tuple containing query status and output
+            Tuple containing success flag (bool) and output string
         """
-        print("Query --->", query)
-        result = self.joern_client.execute(query)
-        print("result: ", result)
-        stdout = result["stdout"]
-        
-        if "Error" in stdout or "ConsoleException" in stdout:
-            return QueryStatus.ERROR, stdout
-        elif "List()" in stdout or "= empty iterator" in stdout:
-            return QueryStatus.EMPTYRESULT, stdout
-        else:
-            return QueryStatus.SUCCESSFUL, stdout
+        try:
+            self._ensure_connected()
+            
+            # Run the blocking synchronous client.execute in a separate thread
+            # nest_asyncio handles the nested loop if execute() creates one
+            loop = asyncio.get_running_loop()
+            result = await loop.run_in_executor(None, lambda: self.client.execute(query))
+            
+            stdout = result.get("stdout", "")
+            stderr = result.get("stderr", "")
+            
+            if stderr:
+                # Some errors appear in stderr
+                raise JoernException(f"Joern internal error (stderr): {stderr}")
+
+            if "Error" in stdout or "ConsoleException" in stdout:
+                return False, stdout
+            elif "List()" in stdout or "= empty iterator" in stdout:
+                # Valid execution, but empty result
+                return True, stdout
+            else:
+                return True, stdout
+                
+        except Exception as e:
+            raise JoernException(f"Failed to execute query: {str(e)}")
     
-    def run_queries(self, queries: list, source_code: str) -> Tuple[bool, list]:
+    async def load_project(self, input_path: str, project_name: str = "temp_project") -> str:
         """
-        Run a sequence of queries and extract paths from the last query result
+        Load a project into Joern.
         
         Args:
-            queries: List of CPGQL queries to execute
-            source_code: The source code being analyzed
+            input_path: Path to the source code
+            project_name: Name to assign to the project (default: temp_project)
             
         Returns:
-            Tuple containing success flag and extracted paths
+            Output logs from the import
         """
-        print("Running queries...")
-        # Running each query except the last one
-        for query in queries[:-1]:
-            try:
-                status, _ = self.run_query(query)
-                if status == QueryStatus.ERROR:
-                    return False, []
-            except Exception as e:
-                print(f"Failed to run query: {e}, moving to the next sample")
-                return False, []
+        # Ensure we are not overwriting an existing project by trying to delete it first (best effort)
+        await self.delete_project(project_name, strict=False)
 
-        # Extract paths from the last query
-        success, paths = self.extract_joern_paths(source_code, queries)
-        return success, paths
-    
-    def load_project(self, folder_path: str) -> str:
-        """
-        Load a project into Joern
+        import_cmd = import_code_query(input_path, project_name)
+        success, output = await self.run_query(import_cmd)
         
-        Args:
-            folder_path: Path to the folder containing the code to analyze
+        if not success:
+            raise JoernException(f"Failed to import project: {output}")
             
-        Returns:
-            Output from the import operation
-        """
-        import_code_qr = import_code_query(folder_path, folder_path)
-        print("import query: ", import_code_qr)
-        status, stdout = self.run_query(import_code_qr)
-        print("stdout: ", stdout)
-        print(f"Project loaded from {folder_path}")
-        return stdout
+        return output
 
-    def delete_project(self, project_name: str) -> str:
+    async def delete_project(self, project_name: str, strict: bool = True) -> str:
         """
-        Delete a project from Joern
+        Delete a project from Joern to free memory.
         
         Args:
             project_name: Name of the project to delete
+            strict: If True, raises exception on failure. If False, just logs/returns.
             
         Returns:
-            Output from the delete operation
+            Output logs
         """
-        delete_project_query = delete_query(project_name)
-        print("delete query: ", delete_project_query)
-        status, stdout = self.run_query(delete_project_query)
-        print("stdout: ", stdout)
-        print(f"Project {project_name} deleted")
-        return stdout
-    
-    def extract_joern_paths(self, source_code: str, queries: list) -> Tuple[bool, list]:
+        delete_cmd = delete_query(project_name)
+        success, output = await self.run_query(delete_cmd)
+        
+        if strict and not success:
+            raise JoernException(f"Failed to delete project {project_name}: {output}")
+            
+        return output
+
+    async def reset_session(self, project_name: str = "temp_project"):
         """
-        Extract paths from Joern analysis results
+        Helper to clean up a session.
+        """
+        await self.delete_project(project_name, strict=False)
+
+    async def run_batch_queries(self, queries: List[str]) -> Tuple[bool, List[Any]]:
+        """
+        Run a list of queries. If any fail, returns False.
+        The last query result is usually what we care about in the Joern flow, 
+        but we return all outputs just in case.
+        """
+        results = []
+        for q in queries:
+            success, output = await self.run_query(q)
+            if not success:
+                return False, results # Abort early
+            results.append(output)
+        return True, results
+
+    async def extract_joern_paths(self, source_code: str, queries: list) -> Tuple[bool, list]:
+        """
+        Run the queries and assume the last one is a reachability query that needs slicing.
         
         Args:
-            source_code: The source code being analyzed
-            queries: The list of queries (the last one will be modified to extract path data)
+            source_code: The source code string
+            queries: List of Scala queries string
             
         Returns:
-            Tuple containing success flag and extracted paths
+            Tuple (Success, Slices List)
         """
-        # Modify the last query to extract JSON-formatted path information
-        reachability_query = queries[-1]
-        if reachability_query.endswith(".l"):
-            # Remove last '.l' execution directive
-            reachability_query = "".join(reachability_query.rsplit(".l", 1))
-        
-        # Extract node information for each path element
-        reachability_query = reachability_query + ".map(flow => flow.elements.map(node => Map(\"id\" -> node.id, \"line_number\" -> node.lineNumber))).toJsonPretty"
-
-        status, joern_paths = self.run_query(reachability_query)
-        if status != QueryStatus.SUCCESSFUL:
-            print("Joern paths query failed with the following output: ", joern_paths)
+        if not queries:
             return False, []
 
-        print("Joern generated paths: ", joern_paths)
+        # Run setup queries (all except last)
+        setup_queries = queries[:-1]
+        success, _ = await self.run_batch_queries(setup_queries)
+        if not success:
+            return False, []
 
-        # Parse the output
+        # Modify and run the last query
+        reachability_query = queries[-1]
+        
+        # Strip .l if present
+        if reachability_query.endswith(".l"):
+            reachability_query = reachability_query[:-2]
+
+        # Inject the JSON mapping logic
+        # This is the "Magic" slicing step
+        json_transform = (
+            ".map(flow => flow.elements.map(node => "
+            "Map(\"id\" -> node.id, \"line_number\" -> node.lineNumber)"
+            ")).toJsonPretty"
+        )
+        final_query = reachability_query + json_transform
+        
+        success, json_output = await self.run_query(final_query)
+        
+        if not success:
+            print(f"DEBUG: Joern Query Failed.\nQuery: {final_query}\nOutput: {json_output}")
+            return False, []
+            
+        # Parse output
         try:
-            # Remove first line (result declaration)
-            if len(joern_paths.split("\n", 1)) != 2:
-                print("Joern returned an invalid paths output:", joern_paths)
-                return True, []
-            joern_paths = joern_paths.split("\n", 1)[1]
+            # Clean up the output string to get pure JSON
+            # Joern outputs: val res12: String = """[ ... ]"""
+            # We need to extract what's inside """ ... """
+            if '"""' in json_output:
+                parts = json_output.split('"""')
+                if len(parts) >= 2:
+                    clean_json = parts[1]
+                else:
+                    return False, [] # Unexpected format
+            else:
+                # Sometimes it might just be the string if formatted differently
+                clean_json = json_output
 
-            # Remove last line (closing brace)
-            if len(joern_paths.rsplit("\n", 2)) != 3:
-                print("Joern returned an invalid paths output (first line removed):", joern_paths)
-                return True, []
-            joern_paths = joern_paths.rsplit("\n", 2)[0]
-            joern_paths = "[" + joern_paths + "]"
-
-            # Parse JSON
-            joern_paths_json = json.loads(joern_paths)
-        except Exception as e:
-            print(f"Failed to load joern output:\n{joern_paths}\nWith the error: {e}")
-            return True, []
-
-        # Extract path information with source code
-        source_code_lines = source_code.splitlines()
-        paths = []
-        for path_json in joern_paths_json:
-            path = []
-            for element in path_json:
-                if not str(element["line_number"]).isdigit():
-                    continue
-                path.append({
-                    "id": element["id"], 
-                    "line_number": element["line_number"], 
-                    "line_code": source_code_lines[element["line_number"]-1]
-                })
-            paths.append(path)
-        print("final paths: \n", paths)
-        return True, paths
-    
-    def extract_sources_sinks(self, source_code: str, sources_qr: str, sinks_qr: str) -> Tuple[bool, list, list]:
-        """
-        Extract sources and sinks using provided queries
-        
-        Args:
-            source_code: The source code being analyzed
-            sources_qr: The query to identify sources
-            sinks_qr: The query to identify sinks
+            # If it is empty result "[ ]" or empty string
+            if not clean_json.strip():
+                return True, [] 
+                
+            paths_data = json.loads(clean_json)
             
-        Returns:
-            Tuple containing success flag, sources list, and sinks list
-        """
-        # Modify queries to extract JSON data
-        sources_qr = sources_qr + ".map(node => Map(\"id\" -> node.id, \"line_number\" -> node.lineNumber)).toJsonPretty"
-        sinks_qr = sinks_qr + ".map(node => Map(\"id\" -> node.id, \"line_number\" -> node.lineNumber)).toJsonPretty"
-        
-        # Run queries
-        srcs_status, joern_sources = self.run_query(sources_qr)
-        sinks_status, joern_sinks = self.run_query(sinks_qr)
-        
-        if srcs_status == QueryStatus.ERROR or sinks_status == QueryStatus.ERROR:
-            print(f"Joern sources or sinks query failed:\nSources Output: {joern_sources}\nSinks Output: {joern_sinks}")
-            return False, [], []
-
-        # Parse sources
-        try:
-            # Parse sources
-            joern_sources = joern_sources.split("\n", 1)[1]
-            joern_sources = joern_sources.rsplit("\n", 2)[0]
-            joern_sources = "[" + joern_sources + "]"
-            
-            # Parse sinks
-            joern_sinks = joern_sinks.split("\n", 1)[1]
-            joern_sinks = joern_sinks.rsplit("\n", 2)[0]
-            joern_sinks = "[" + joern_sinks + "]"
-            
-            # Convert to JSON
-            sources_json = json.loads(joern_sources)
-            sinks_json = json.loads(joern_sinks)
-        except Exception as e:
-            print(f"Failed to parse Joern output: {e}")
-            return False, [], []
-
-        # Extract information with source code
-        source_code_lines = source_code.splitlines()
-        sources_list = []
-        sinks_list = []
-        
-        # Process sources
-        for source in sources_json:
-            if not str(source["line_number"]).isdigit():
-                continue
-            sources_list.append({
-                "id": source["id"], 
-                "line_number": source["line_number"], 
-                "line_code": source_code_lines[source["line_number"]-1]
-            })
-        
-        # Process sinks
-        for sink in sinks_json:
-            if not str(sink["line_number"]).isdigit():
-                continue
-            sinks_list.append({
-                "id": sink["id"], 
-                "line_number": sink["line_number"], 
-                "line_code": source_code_lines[sink["line_number"]-1]
-            })
-        
-        return True, sources_list, sinks_list
-    
-    def validate_joern_paths(self, paths: list, sources: list, sinks: list, criticals: list) -> list:
-        """
-        Validate paths based on source, sink, and critical elements
-        
-        Args:
-            paths: List of extracted paths
-            sources: List of source substrings to check for
-            sinks: List of sink substrings to check for
-            criticals: List of critical code lines to check for
-            
-        Returns:
-            List of valid paths
-        """
-        valid_paths = []
-
-        for path in paths:
-            isSourceExists = False
-            isSinksExists = False
-            isCriticalExists = False
-
-            for element in path:
-                if any(source in element["line_code"] for source in sources):
-                    isSourceExists = True
-                if any(sink in element["line_code"] for sink in sinks):
-                    isSinksExists = True
-                if len(criticals) == 0 or any(critical in element["line_code"] for critical in criticals):
-                    isCriticalExists = True
-            
-            if isSourceExists and isSinksExists and isCriticalExists:
-                valid_paths.append(path)
-
-        return valid_paths
-    
-    def get_number_of_flows(self, queries: list) -> int:
-        """
-        Get the number of flows from a query result
-        
-        Args:
-            queries: List of queries to execute
-            
-        Returns:
-            Number of flows found
-        """
-        # Run all queries except the last one
-        for qr in queries[:-1]:
-            self.run_query(qr)
-        
-        # Get the size of the result
-        flows_size_query = queries[-1] + ".toList.size"
-        _, size_joern = self.run_query(flows_size_query)
-        
-        try:
-            size = int(size_joern.split(" ")[-1])
-            return size
+        except json.JSONDecodeError:
+            # This usually means Joern output something non-JSON or empty
+            return False, []
         except Exception:
-            return 0
+            return False, []
+
+        # Slice the code
+        return True, self._map_paths_to_code(source_code, paths_data)
+
+    def _map_paths_to_code(self, source_code: str, paths_json: List[List[Dict]]) -> List[List[Dict]]:
+        """
+        Internal helper to slice the source code based on line numbers.
+        """
+        source_lines = source_code.splitlines()
+        sliced_paths = []
+        
+        for path_trace in paths_json:
+            slice_ = []
+            for node in path_trace:
+                line_num = node.get("line_number")
+                # Valildate line number
+                if isinstance(line_num, int) and 0 < line_num <= len(source_lines):
+                    slice_.append({
+                        "id": node.get("id"),
+                        "line_number": line_num,
+                        "code": source_lines[line_num - 1]
+                    })
+            if slice_:
+                sliced_paths.append(slice_)
+                
+        return sliced_paths

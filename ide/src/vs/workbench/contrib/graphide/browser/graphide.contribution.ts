@@ -1,5 +1,5 @@
 /*---------------------------------------------------------------------------------------------
- *  GraphIDE Panel Contribution
+ *  Graphide Panel Contribution
  *  Stage 1: Pure UI - No agent logic
  *--------------------------------------------------------------------------------------------*/
 
@@ -19,7 +19,7 @@ import { IViewsService } from '../../../services/views/common/viewsService.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
 
 // Register the GraphIDE icon
-const graphideViewIcon = registerIcon('graphide-view-icon', Codicon.hubot, localize('graphideViewIcon', 'View icon of the GraphIDE panel.'));
+const graphideViewIcon = registerIcon('graphide-view-icon', Codicon.hubot, localize('graphideViewIcon', 'View icon of the Graphide panel.'));
 
 // Register the view container (sidebar panel)
 const VIEW_CONTAINER = Registry.as<IViewContainersRegistry>(ViewExtensions.ViewContainersRegistry).registerViewContainer({
@@ -35,7 +35,7 @@ const VIEW_CONTAINER = Registry.as<IViewContainersRegistry>(ViewExtensions.ViewC
 // Register the view (the actual panel content)
 Registry.as<IViewsRegistry>(ViewExtensions.ViewsRegistry).registerViews([{
 	id: 'graphide.panel',
-	name: localize2('graphidePanel', 'GraphIDE'),
+	name: localize2('graphidePanel', 'Graphide'),
 	ctorDescriptor: new SyncDescriptor(GraphIDEViewPane),
 	canToggleVisibility: true,
 	canMoveView: true,
@@ -66,11 +66,11 @@ class GraphIDEStatusBarContribution extends Disposable implements IWorkbenchCont
 
 	private registerStatusBar(): void {
 		const item = this.statusBarService.addEntry({
-			name: localize('graphide.analyze', "GraphIDE Analyze"),
+			name: localize('graphide.analyze', "Graphide Analyze"),
 			text: '$(hubot) Analyze',
-			tooltip: localize('graphide.analyze.tooltip', "Analyze Code with GraphIDE"),
+			tooltip: localize('graphide.analyze.tooltip', "Analyze Code with Graphide"),
 			command: 'graphide.analyze',
-			ariaLabel: localize('graphide.analyze', "GraphIDE Analyze")
+			ariaLabel: localize('graphide.analyze', "Graphide Analyze")
 		}, 'graphide.analyze', StatusbarAlignment.RIGHT, 100);
 
 		this._register(item);
