@@ -23,7 +23,7 @@ logger = logging.getLogger("graphide.main")
 app = FastAPI(
     title=settings.APP_NAME,
     description="Backend for Graphide: Agentic Vulnerability Analysis",
-    version="1.0.0"
+    version="1.8.0"
 )
 
 # Allow CORS for localhost (VS Code / Electron)
