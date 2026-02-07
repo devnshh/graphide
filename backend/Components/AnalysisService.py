@@ -3,6 +3,13 @@ import os
 import json
 import requests
 from typing import Dict, Any, List
+try:
+    from google import genai
+    from google.genai import types
+except ImportError:
+    print("Warning: google.genai not found. Please install google-genai.")
+    genai = None
+
 
 # Adjust path if needed
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -33,13 +40,40 @@ class AnalysisService:
         # Ensure URLs point to the chat completions endpoint
         self.q_url = self._ensure_endpoint(settings.MODEL_Q_URL)
         self.d_url = self._ensure_endpoint(settings.MODEL_D_URL)
+        
+        # Initialize Gemini
+        self.gemini_client = None
+        if hasattr(settings, "GEMINI_API_KEY") and settings.GEMINI_API_KEY and genai:
+            self.gemini_client = genai.Client(api_key=settings.GEMINI_API_KEY)
+            
+        # Load System Prompt
+        self.system_prompt_text = "You are a vulnerability analysis expert."
+        try:
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            prompt_path = os.path.join(base_dir, "system_prompt.txt")
+            if os.path.exists(prompt_path):
+                with open(prompt_path, "r") as f:
+                    self.system_prompt_text = f.read()
+        except Exception as e:
+            print(f"Error loading system prompt: {e}")
+
 
     def _ensure_endpoint(self, url: str) -> str:
+        # If no URL provided, return empty
+        if not url:
+            return ""
+            
+        # If the user explicitly provided a full path (heuristic), trust it
+        if "chat/completions" in url or "generate" in url:
+            return url
+            
+        # Default behavior: Assume base URL and append OpenAI-style endpoint
         if not url.endswith("/v1/chat/completions"):
             if url.endswith("/"):
                 return f"{url}v1/chat/completions"
             return f"{url}/v1/chat/completions"
         return url
+
 
     async def analyze_code(self, file_name: str, code_content: str) -> Dict[str, Any]:
         """
@@ -76,39 +110,62 @@ class AnalysisService:
             await self.joern.load_project(container_dir, project_name)
             logs.append("Step 1 Complete: Project loaded in Joern.")
             
-            # --- Step 2: Generate Queries (Model Q) ---
-            print("[Analysis] Generating verification queries from Model Q...")
-            logs.append("Step 2/4: Asking Model Q to generate vulnerability-specific CPG queries...")
-            queries = self._generate_queries(code_content)
-            print(f"DEBUG: Generated Queries: {queries}")
+            # --- Retry Loop for Query Generation & Verification ---
+            # We assume "flakiness" comes from bad queries. We will retry Step 2 & 3.
+            max_retries = 3
+            slices = []
+            queries = []
             
-            if not queries:
-                logs.append("Step 2 Failed: Model Q did not return valid queries.")
-                return {
-                    "status": "error",
-                    "message": "Failed to generate valid queries from Model Q.",
-                    "logs": logs
-                }
-            logs.append(f"Step 2 Complete: Generated {len(queries)} queries.")
-            
-            # --- Step 3: Verify & Slice (Joern Execution) ---
-            print(f"[Analysis] Executing {len(queries)} queries...")
-            logs.append(f"Step 3/4: Executing {len(queries)} CPG queries in Joern to verify logic...")
-            
-            # Format queries for log display
-            formatted_queries = "\n".join([f"- Query {i+1}: `{q}`" for i, q in enumerate(queries)])
-            logs.append(f"### Generated Queries\n{formatted_queries}")
+            for attempt in range(1, max_retries + 1):
+                logs.append(f"--- Attempt {attempt}/{max_retries} ---")
+                
+                # --- Step 2: Generate Queries (Model Q) ---
+                print(f"[Analysis] Generating verification queries from Model Q (Attempt {attempt})...")
+                logs.append("Step 2/4: Asking Model Q to generate vulnerability-specific CPG queries...")
+                
+                # If this is a retry, we could pass context (TODO: capture specific Joern error if possible)
+                prev_error = "Execution Failed" if attempt > 1 else None
+                queries = self._generate_queries(code_content, previous_error=prev_error)
+                
+                print(f"DEBUG: Generated Queries: {queries}")
+                
+                if not queries:
+                    logs.append(f"Step 2 Failed: Model Q did not return valid queries (Attempt {attempt}).")
+                    if attempt == max_retries:
+                        return {
+                            "status": "error",
+                            "message": "Failed to generate valid queries from Model Q after multiple attempts.",
+                            "logs": logs
+                        }
+                    continue # Try again
+                
+                logs.append(f"Step 2 Complete: Generated {len(queries)} queries.")
+                
+                # --- Step 3: Verify & Slice (Joern Execution) ---
+                print(f"[Analysis] Executing {len(queries)} queries...")
+                logs.append(f"Step 3/4: Executing {len(queries)} CPG queries in Joern to verify logic...")
+                
+                # Format queries for log display
+                formatted_queries = "\n".join([f"- Query {i+1}: `{q}`" for i, q in enumerate(queries)])
+                logs.append(f"### Generated Queries (Attempt {attempt})\n{formatted_queries}")
 
-            # Call async
-            success, slices = await self.joern.extract_joern_paths(code_content, queries)
+                # Call async
+                success, slices = await self.joern.extract_joern_paths(code_content, queries)
+                
+                if success:
+                    # Success! Break the retry loop
+                    break
+                else:
+                    logs.append(f"Step 3 Failed: Joern execution encountered errors (Attempt {attempt}).Retrying...")
+                    if attempt == max_retries:
+                         return {
+                            "status": "error",
+                            "message": "Joern execution failed after multiple attempts.",
+                            "logs": logs
+                        }
             
-            if not success:
-                logs.append("Step 3 Failed: Joern execution encountered errors.")
-                return {
-                    "status": "error",
-                    "message": "Joern execution failed.",
-                    "logs": logs
-                }
+            # If we exited the loop successfully with valid slices or explicitly 'success' but empty slices
+
 
             if not slices:
                 print("[Analysis] No vulnerability paths verified.")
@@ -165,6 +222,7 @@ class AnalysisService:
         Helper to call the external Model APIs.
         Assumes the API accepts a JSON with 'prompt' or 'query'.
         """
+        print(f"DEBUG: Calling Model API at {url}")
         try:
             # Try a standard payload structure
             payload = {
@@ -179,9 +237,12 @@ class AnalysisService:
             # Litng/VLLM often expects standard OpenAI format:
             # {"messages": [...], "model": "something"}
             # We add a default model field just in case it is required.
-            payload["model"] = "default"
+            # payload["model"] = "default" # Model D rejects "default"
 
+
+            # print(f"DEBUG: Payload: {json.dumps(payload)}") 
             response = requests.post(url, json=payload, timeout=60, verify=False)
+            print(f"DEBUG: Response Status: {response.status_code}")
             response.raise_for_status()
             
             data = response.json()
@@ -200,19 +261,28 @@ class AnalysisService:
             return str(data)
             
         except requests.exceptions.Timeout:
+            print(f"ERROR: Model API Timed out: {url}")
             return f"Error: Request to Model API timed out ({url})."
         except requests.exceptions.ConnectionError:
+            print(f"ERROR: Model API Connection Refused: {url}")
             return f"Error: Could not connect to Model API ({url}). Check if the server is running."
         except requests.exceptions.HTTPError as he:
+            print(f"ERROR: Model API HTTP Error: {he.response.status_code} - {he.response.text}")
             return f"Error: Model API returned {he.response.status_code}: {he.response.text}"
         except Exception as e:
             print(f"Error calling Model API ({url}): {e}")
             return f"Error: Unexpected failure calling Model API: {str(e)}"
 
-    def _generate_queries(self, code: str) -> List[str]:
+    def _generate_queries(self, code: str, previous_error: str = None) -> List[str]:
         """
         Ask Model Q to look for vulnerabilities and output Joern Queries.
         """
+        
+        # Enhanced constraints to reduce syntax errors
+        context_instruction = ""
+        if previous_error:
+            context_instruction = f"\nIMPORTANT: Your previous attempt failed with execution errors. Please rewrite the queries to be syntactically correct standard CPGQL. avoid using abbreviated forms like 'call.name', use 'cpg.call.name'.\n"
+
         prompt_content = f"""Your task is to design Precise Joern CPGQL Queries for Vulnerability Analysis.
 Objective:
 Develop targeted CPGQL Joern queries to:
@@ -220,24 +290,60 @@ Develop targeted CPGQL Joern queries to:
 2. Capture potential vulnerability paths
 3. Exclude paths with sanitizers
 
-Constraints:
-- Executable Joern CPGQL
-- Last query uses reachableByFlows
+Constraints & Syntax Rules:
+- MUST use standard CPGQL syntax starting with `cpg.` (e.g., `cpg.call`, `cpg.method`).
+- Define intermediate steps using `def` (e.g., `def source = ...`).
+- final query MUST use `.reachableByFlows(...)`.
+- Output MUST be a valid JSON object with a "queries" key containing a list of strings.
+
+{context_instruction}
+
+Input Code:
+{code}
 
 Output Requirements:
 JSON with one field "queries"
-
-Input Code:
-{code}"""
+"""
         
         response_text = self._call_model_api(self.q_url, prompt_content)
+        print(f"DEBUG: Model Q Raw Response: {response_text}")
         return self._extract_queries_from_text(response_text)
 
-    def _explain_and_patch(self, slices: List[List[Dict]]) -> Dict:
+    def _explain_and_patch(self, slices: List[List[Dict]]) -> Any:
         """
-        Ask Model D to explain the verified slices and suggest a patch.
+        Ask Gemini (or Model D fallback) to explain the verified slices and suggest a patch.
+        Uses system_prompt.txt for instructions.
         """
         slice_text = json.dumps(slices, indent=2)
+        
+        # If Gemini is configured, use it
+        if self.gemini_client:
+            try:
+                prompt_content = f"""
+Here are the exact execution traces (Slices) that cause the issue:
+
+{slice_text}
+
+Analyze the slices based on the system instructions and provide the explanation, patch, and reasoning.
+"""
+                response = self.gemini_client.models.generate_content(
+                    model="gemini-3-flash-preview", 
+                    contents=prompt_content,
+                    config=types.GenerateContentConfig(
+                        system_instruction=self.system_prompt_text
+                        # Removed response_mime_type="application/json" to allow Markdown output
+                    )
+                )
+                
+                response_text = response.text
+                print(f"[Analysis] Gemini Response received: {len(response_text)} chars")
+                
+                # Return the raw text (Markdown) directly for better UI rendering
+                return response_text
+                    
+            except Exception as e:
+                print(f"[Analysis] Gemini Error: {e}. Falling back to Model D.")
+                # Fallback to Model D logic below
         
         prompt = f"""
 I have mathematically verified a vulnerability in the code provided.
@@ -268,20 +374,61 @@ Output format: JSON with keys "explanation", "patch_code", "fix_reasoning".
     def _extract_queries_from_text(self, text: str) -> List[str]:
         """
         Helper to extract queries from text (migrated from model.py)
+        Handles standard JSON and Python-dict style (single quotes) responses.
         """
         try:
-            # Try to find JSON code block
-            start = text.rfind("```json")
-            end = text.rfind("}```")
-            
-            clean_text = text
-            if start != -1 and end != -1:
-                clean_text = text[start+7:end+1]
-            elif "{" in text and "}" in text:
-                 # Try to find outermost braces
-                 clean_text = text[text.find("{"):text.rfind("}")+1]
+            # 1. Try to find content within ```json ... ``` or just ``` ... ```
+            import re
+            match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL)
+            if match:
+                clean_text = match.group(1)
+            else:
+                # 2. Try to find outermost braces if no code block
+                start = text.find("{")
+                end = text.rfind("}")
+                if start != -1 and end != -1:
+                    clean_text = text[start:end+1]
+                else:
+                    clean_text = text
 
-            data = json.loads(clean_text)
-            return data.get("queries", [])
-        except:
+            # 3. Handle Single Quotes (Invalid JSON but common LLM output)
+            # If we see 'queries': ['...', '...'], replace single quotes with double quotes
+            # ONLY if it looks like there are no double quotes wrapping the content
+            if "'" in clean_text and '"' not in clean_text:
+                 clean_text = clean_text.replace("'", '"')
+            
+            # 4. Try parsing as JSON first
+            try:
+                data = json.loads(clean_text)
+                return data.get("queries", [])
+            except json.JSONDecodeError:
+                # 5. Fallback: Try ast.literal_eval for Python-style dicts
+                import ast
+                try:
+                    # Fix: If LLM outputs {"queries": ['...']} (mixed quotes), ast.literal_eval handles it fine as a dict
+                    data = ast.literal_eval(clean_text)
+                    if isinstance(data, dict):
+                        return data.get("queries", [])
+                except:
+                    pass
+                
+                # 6. Fallback: Heuristic replacement for mixed quotes cases
+                # e.g. "queries": ['val1', 'val2']
+                # We try to replace single quotes with double quotes specifically inside the list
+                try:
+                    # Very rough heuristic: replace ' with " if it looks like a list item
+                    normalized = clean_text.replace("'", '"')
+                    data = json.loads(normalized)
+                    return data.get("queries", [])
+                except:
+                    pass
+
+                # 7. Fallback: Regex extraction as last resort
+                queries = re.findall(r"['\"](.*?)['\"]", clean_text)
+                # Filter out keys like 'queries'
+                return [q for q in queries if q != "queries"]
+
+        except Exception as e:
+            print(f"DEBUG: Error extracting queries: {e}")
             return []
+
