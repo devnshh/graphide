@@ -13,28 +13,53 @@
     --graphide-space-sm: 8px;
     --graphide-space-md: 12px;
     --graphide-space-lg: 16px;
+    --graphide-space-xl: 24px;
 
-    /* ========== Typography Scale ========== */
-    --graphide-font-size-xs: 11px;
-    /* Meta/system text */
-    --graphide-font-size-sm: 12px;
-    /* Section headers */
-    --graphide-font-size-base: 13px;
-    /* Primary content */
-    --graphide-line-height: 1.4;
-    /* Optimized for narrow sidebar */
+    /* ========== Colors (Design System) ========== */
+    /* Slate (Neutrals) */
+    --color-slate-100: #f1f5f9;
+    --color-slate-200: #e2e8f0;
+    --color-slate-300: #cbd5e1;
+    --color-slate-400: #94a3b8;
+    --color-slate-500: #64748b;
+    --color-slate-600: #475569;
+    --color-slate-700: #334155;
+    --color-slate-800: #1e293b;
+    --color-slate-900: #0f172a;
+    --color-slate-950: #020617;
 
-    /* ========== Tab Styling ========== */
-    --graphide-tab-active-bg: var(--vscode-sideBar-background);
-    --graphide-tab-active-text: var(--vscode-foreground);
-    --graphide-tab-inactive-text: var(--vscode-descriptionForeground);
+    /* Cyan (Primary Brand) */
+    --color-cyan-200: #a5f3fc;
+    --color-cyan-300: #67e8f9;
+    --color-cyan-400: #22d3ee;
+    --color-cyan-500: #06b6d4;
+    --color-cyan-600: #0891b2;
+    --color-cyan-900: #164e63;
+    --color-cyan-950: #083344;
 
-    /* ========== Semantic Colors ========== */
-    --graphide-error-border: var(--vscode-errorForeground);
-    --graphide-error-bg: color-mix(in srgb, var(--vscode-errorForeground) 8%, transparent);
-    --graphide-warning-border: var(--vscode-notificationsWarningIcon-foreground);
-    --graphide-warning-bg: color-mix(in srgb, var(--vscode-notificationsWarningIcon-foreground) 8%, transparent);
-    --graphide-success-color: var(--vscode-testing-iconPassed);
+    /* Semantic Colors */
+    --color-rose-400: #fb7185;
+    --color-rose-500: #f43f5e;
+    --color-rose-950: #4c0519;
+
+    --color-emerald-400: #34d399;
+    --color-emerald-500: #10b981;
+
+    --color-orange-300: #fdba74;
+    --color-orange-400: #fb923c;
+
+    --color-purple-400: #c084fc;
+
+    /* ========== UI Variables (Mapped) ========== */
+    --graphide-bg: #09090b;
+    /* Zinc 950 essentially */
+    --graphide-sidebar-bg: #18181b;
+    /* Zinc 900 */
+    --graphide-card-bg: #1e1e1e;
+    --graphide-border: rgba(30, 41, 59, 0.5);
+    /* Slate 800 / 50% */
+
+    --graphide-font-sans: ui-sans-serif, system-ui, sans-serif;
 
     /* ========== Density Tokens (Optimized) ========== */
     --graphide-row-height: 22px;
@@ -43,8 +68,12 @@
 
     display: flex;
     flex-direction: column;
-    height: 100%;
-    background: var(--vscode-sideBar-background);
+    height: 100vh;
+    width: 100%;
+    background: var(--graphide-bg);
+    color: var(--color-slate-400);
+    font-family: var(--graphide-font-sans);
+    overflow: hidden;
 }
 
 /* Density: Compact */
@@ -244,7 +273,8 @@
 
 .graphide-message-content h1,
 .graphide-message-content h2,
-.graphide-message-content h3 {
+.graphide-message-content h3,
+.graphide-message-content h4 {
     margin: var(--graphide-space-sm) 0 var(--graphide-space-xs);
     font-weight: 600;
     color: var(--vscode-foreground);
@@ -262,8 +292,31 @@
     font-size: 1.05em;
 }
 
+.graphide-message-content h4 {
+    font-size: 1em;
+    margin-bottom: 2px;
+    /* Tighter for H4 */
+}
+
+/* Remove margin between header and list */
+.graphide-message-content h3+ul,
+.graphide-message-content h4+ul,
+.graphide-message-content h3+ol,
+.graphide-message-content h4+ol {
+    margin-top: 0 !important;
+}
+
 .graphide-message-content p {
     margin: var(--graphide-space-xs) 0;
+}
+
+/* Remove vertical padding/margins from the very top and bottom elements to tighten the box */
+.graphide-message-content>*:first-child {
+    margin-top: 0 !important;
+}
+
+.graphide-message-content>*:last-child {
+    margin-bottom: 0 !important;
 }
 
 .graphide-message-content code {
@@ -289,12 +342,19 @@
 
 .graphide-message-content ul,
 .graphide-message-content ol {
-    margin: var(--graphide-space-xs) 0;
+    margin: 2px 0;
+    /* Reduced from 4px/xs */
     padding-left: 1.5em;
 }
 
 .graphide-message-content li {
-    margin: 2px 0;
+    margin: 0;
+    /* Tighten list items */
+}
+
+.graphide-message-content li p {
+    margin: 0;
+    /* Ensure paragraphs inside lists don't add spaced */
 }
 
 .graphide-message-content strong {
@@ -479,4 +539,430 @@
 .hc-black .graphide-send-btn:focus-visible,
 .hc-light .graphide-send-btn:focus-visible {
     outline-width: 2px;
+
+}
+
+/* ============================================================================
+   File Chip (Attachment Style)
+   ============================================================================ */
+
+.graphide-file-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 8px;
+    margin: 4px 0;
+    background: var(--vscode-keybindingTable-headerBackground);
+    /* Subtle dark container */
+    border: 1px solid var(--vscode-widget-border);
+    border-radius: 12px;
+    color: var(--vscode-foreground);
+    text-decoration: none;
+    font-size: 12px;
+    cursor: pointer;
+    vertical-align: middle;
+    transition: all 0.2s ease;
+    max-width: 100%;
+}
+
+.graphide-file-chip:hover {
+    background: var(--vscode-toolbar-hoverBackground);
+    border-color: var(--vscode-focusBorder);
+    text-decoration: none;
+}
+
+.graphide-file-chip .codicon {
+    font-size: 14px;
+    /* Ensure icon size is consistent */
+    color: var(--vscode-symbolIcon-classForeground);
+    /* Use symbol color for icon */
+}
+
+/* Yellow/Function icon color style for {} */
+.graphide-file-chip .codicon-symbol-misc,
+.graphide-file-chip .codicon-json {
+    color: var(--vscode-symbolIcon-constantForeground);
+}
+
+/* ============================================================================
+   File Chip (Attachment Style)
+   ============================================================================ */
+
+.graphide-message-content a[href^="file:"],
+.graphide-file-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    margin: 0 4px;
+    background: var(--vscode-keybindingTable-headerBackground);
+    border: 1px solid var(--vscode-widget-border);
+    border-radius: 6px;
+    color: var(--vscode-foreground) !important;
+    text-decoration: none !important;
+    font-size: 0.95em;
+    cursor: pointer;
+    vertical-align: middle;
+    transition: all 0.2s ease;
+    line-height: 1.5;
+}
+
+.graphide-message-content a[href^="file:"]:hover,
+.graphide-file-chip:hover {
+    background: var(--vscode-toolbar-hoverBackground);
+    border-color: var(--vscode-focusBorder);
+    color: var(--vscode-foreground) !important;
+}
+
+/* Icon styling within chip */
+.graphide-message-content a[href^="file:"] .codicon {
+    font-size: 14px;
+    margin-right: 4px;
+    vertical-align: text-bottom;
+}
+
+/* JSON Icon Color */
+.graphide-message-content a[href^="file:"] .codicon-json {
+    color: var(--vscode-symbolIcon-constantForeground);
+}
+
+/* File Icon Color */
+.graphide-message-content a[href^="file:"] .codicon-file {
+    color: var(--vscode-symbolIcon-textForeground);
+}
+
+/* ============================================================================
+   Animations & Loading
+   ============================================================================ */
+
+/* Fade In Up Animation for new messages */
+@keyframes graphideFadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.graphide-message.animate-in {
+    animation: graphideFadeInUp 0.3s ease-out forwards;
+}
+
+/* Loading Dots (appearing/disappearing loop) */
+.graphide-loading-dots {
+    display: inline-flex;
+    align-items: center;
+}
+
+.graphide-loading-dots span {
+    animation: graphideDotBlink 1.4s infinite both;
+    margin: 0 1px;
+    font-size: 1.2em;
+    line-height: 1;
+}
+
+.graphide-loading-dots span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.graphide-loading-dots span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes graphideDotBlink {
+    0% {
+        opacity: 0.2;
+    }
+
+    20% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0.2;
+    }
+}
+/* ============================================================================
+   New Layout Structure (Revamp)
+   ============================================================================ */
+
+.graphide-root {
+    display: flex;
+    flex-direction: row;
+    height: 100vh;
+    width: 100%;
+    background: var(--graphide-bg);
+    overflow: hidden;
+    font-family: var(--graphide-font-sans);
+}
+
+/* --- Navigation Sidebar (Left Icon Bar) --- */
+.graphide-nav-sidebar {
+    width: 48px; /* w-12 */
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 0;
+    background: var(--graphide-sidebar-bg);
+    border-right: 1px solid var(--graphide-border);
+    z-index: 20;
+}
+
+.graphide-nav-icon {
+    width: 100%;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    cursor: pointer;
+    color: var(--color-slate-500);
+    transition: color 0.15s;
+    background: transparent;
+    border: none;
+}
+
+.graphide-nav-icon:hover {
+    color: var(--color-slate-300);
+}
+
+.graphide-nav-icon.active {
+    color: var(--color-cyan-400);
+}
+
+.graphide-nav-icon.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--color-cyan-400);
+    box-shadow: 0 0 8px rgba(34, 211, 238, 0.8);
+}
+
+/* --- Main Content Area --- */
+.graphide-main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    background: var(--graphide-card-bg);
+}
+
+.graphide-main-header {
+    height: 40px; /* h-10 */
+    background: var(--graphide-sidebar-bg);
+    border-bottom: 1px solid var(--graphide-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    flex-shrink: 0;
+    font-size: 12px;
+    color: var(--color-slate-300);
+}
+
+.graphide-viewport {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* --- Dashboard View --- */
+.graphide-dashboard {
+    height: 100%;
+    width: 100%;
+    padding: 24px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.graphide-metric-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    width: 100%;
+    margin-bottom: 24px;
+}
+
+.graphide-card {
+    background: rgba(15, 23, 42, 0.5); /* slate-900/50 */
+    border: 1px solid var(--graphide-border);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.graphide-metric-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-slate-500);
+    margin-bottom: 4px;
+    font-weight: 600;
+}
+
+.graphide-metric-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--color-slate-100);
+}
+
+.graphide-table-container {
+    flex: 1;
+    overflow: auto;
+    border: 1px solid var(--graphide-border);
+    border-radius: 8px;
+    background: #1e1e1e;
+}
+
+.graphide-table {
+    width: 100%;
+    text-align: left;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.graphide-table th {
+    background: var(--color-slate-900);
+    color: var(--color-slate-400);
+    padding: 12px 24px;
+    position: sticky;
+    top: 0;
+    border-bottom: 1px solid var(--graphide-border);
+    font-weight: 500;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+}
+
+.graphide-table td {
+    padding: 12px 24px;
+    border-bottom: 1px solid rgba(30, 41, 59, 0.5);
+    color: var(--color-slate-300);
+}
+
+.graphide-table tr:hover {
+    background: rgba(30, 41, 59, 0.3);
+}
+
+/* --- Badge Components --- */
+.graphide-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.graphide-badge.critical {
+    background: rgba(220, 38, 38, 0.1);
+    color: #ef4444; /* red-500 */
+    border: 1px solid rgba(220, 38, 38, 0.2);
+}
+
+.graphide-badge.high {
+    background: rgba(249, 115, 22, 0.1);
+    color: var(--color-orange-400);
+    border: 1px solid rgba(249, 115, 22, 0.2);
+}
+
+.graphide-badge.medium {
+    background: rgba(234, 179, 8, 0.1);
+    color: var(--color-orange-300); /* yellow-ish */
+    border: 1px solid rgba(234, 179, 8, 0.2);
+}
+
+.graphide-badge.low {
+    background: rgba(148, 163, 184, 0.1);
+    color: var(--color-slate-400);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+/* --- Dataflow Graph --- */
+.graphide-graph-container {
+    width: 100%;
+    height: 100%;
+    background: #0f1012;
+    position: relative;
+    overflow: hidden;
+}
+
+.graphide-graph-node {
+    position: absolute;
+    width: 200px;
+    padding: 12px;
+    background: var(--graphide-sidebar-bg);
+    border: 1px solid var(--graphide-border);
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.2s;
+}
+
+.graphide-graph-node.selected {
+    border-color: var(--color-cyan-500);
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+    z-index: 20;
+    background: var(--color-slate-800);
+}
+
+.graphide-node-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.graphide-node-icon {
+    padding: 6px;
+    border-radius: 4px;
+    background: var(--color-slate-900);
+    color: var(--color-slate-200);
+}
+
+.graphide-node-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-slate-200);
+}
+
+.graphide-node-type {
+    font-size: 10px;
+    color: var(--color-slate-500);
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.graphide-taint-Label {
+    margin-top: 8px;
+    font-size: 10px;
+    background: rgba(244, 63, 94, 0.1);
+    color: var(--color-rose-400);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(244, 63, 94, 0.2);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Sidebar Details Panel */
+.graphide-details-panel {
+    width: 320px;
+    background: var(--graphide-sidebar-bg);
+    border-left: 1px solid var(--graphide-border);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }

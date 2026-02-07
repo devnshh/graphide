@@ -51,7 +51,8 @@ class Orchestrator:
             result = await self.analysis_service.analyze_code(request.filePath, content)
             
             logs = result.get("logs", [])
-            log_md = "### Analysis Log\n" + "\n".join([f"- {l}" for l in logs])
+            # Compact log list
+            log_md = "\n".join([f"- {l}" for l in logs])
             
             agent_outputs = []
             
@@ -62,7 +63,7 @@ class Orchestrator:
                  # Even on error, return the log
                  agent_outputs.append(AgentOutput(
                      agentName="Graphide System",
-                     markdownOutput=f"## Analysis Failed\n\n{result.get('message')}\n\n{log_md}",
+                     markdownOutput=f"#### Analysis Failed\n{result.get('message')}\n\n#### Analysis Log\n{log_md}",
                      metadata={"stage": "Error"}
                  ))
                  return ScanResponse(
@@ -88,7 +89,8 @@ class Orchestrator:
 
                  # 1. Main Vulnerability Report
                  # User requested logs BEFORE explanation
-                 final_md = f"## Analysis Log\n{log_md}\n\n## Vulnerability Detected\n\n{text}\n\n### Fix Reasoning\n{reasoning}"
+                 # Use tighter spacing and consistent headers
+                 final_md = f"#### Analysis Log\n{log_md}\n\n#### Vulnerability Detected\n{text}\n\n#### Fix Reasoning\n{reasoning}"
                  
                  agent_outputs.append(AgentOutput(
                      agentName="Graphide Analysis",
@@ -105,7 +107,7 @@ class Orchestrator:
             elif result["status"] == "clean":
                  agent_outputs.append(AgentOutput(
                      agentName="Graphide Analysis",
-                     markdownOutput=f"{result.get('message', 'No vulnerabilities found.')}\n\n{log_md}",
+                     markdownOutput=f"{result.get('message', 'No vulnerabilities found.')}\n\n#### Analysis Log\n{log_md}",
                      metadata={"stage": "Scan"}
                  ))
 

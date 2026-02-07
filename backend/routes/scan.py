@@ -14,7 +14,7 @@ async def scan_endpoint(request: ScanRequest):
     Initiate a scan for selected files.
     """
     try:
-        print(request)
+        print("Scan Request: ",request)
         return await orchestrator.handle_scan(request)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

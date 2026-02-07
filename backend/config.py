@@ -9,6 +9,7 @@ class Settings:
     # Model APIs
     MODEL_Q_URL: str = os.getenv("MODEL_Q_URL", "")
     MODEL_D_URL: str = os.getenv("MODEL_D_URL", "")
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
     
     # Joern
     JOERN_PORT: int = int(os.getenv("JOERN_PORT", "8080"))
