@@ -465,10 +465,10 @@ export class GraphIDEViewPane extends ViewPane {
 
         const uris = await this.fileDialogService.showOpenDialog({
             canSelectFiles: true,
-            canSelectFolders: false,
-            canSelectMany: true,
+            canSelectFolders: true,
+            canSelectMany: false,
             openLabel: 'Analyze',
-            title: 'Select Code File to Analyze'
+            title: 'Select Code File or Directory to Analyze'
         });
 
         if (!uris || uris.length === 0) return;
