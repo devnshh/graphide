@@ -199,10 +199,21 @@ class AnalysisService:
                 print(f"[Analysis] Analyzing target {idx+1}/{len(static_findings)}: {func_loc}")
                 # logs.append(f"--> Analyzing target in {func_loc}...") # Filtered for cleaner UI
                 
-                # Ask Model Q
+                # Ask Model Q for queries based on the aggregated code
                 queries = self._generate_queries(func_code)
+                
+                if queries is None:
+                    # Critical Failure: Model Q is down or erroring
+                    error_msg = f"Analysis Aborted: Model Q API failed for {filename}."
+                    logs.append(f"    CRITICAL ERROR: {error_msg}")
+                    return {
+                        "status": "error",
+                        "message": "Model Q (Query Generator) is unreachable or returned an error.",
+                        "logs": logs
+                    }
+                
                 if not queries:
-                    # logs.append(f"    Model Q produced no queries for this target.") # Filtered
+                    logs.append(f"    Model Q produced no queries for {filename}.")
                     continue
                 
                 # Verify Code
@@ -364,6 +375,11 @@ JSON with one field "queries"
         
         response_text = self._call_model_api(self.q_url, prompt_content)
         print(f"DEBUG: Model Q Raw Response: {response_text}")
+        
+        # Check for API-level errors passed through _call_model_api
+        if response_text.startswith("Error:"):
+            return None
+            
         return self._extract_queries_from_text(response_text)
 
     def _explain_and_patch(self, slices: List[List[Dict]], is_directory: bool = False) -> Any:
