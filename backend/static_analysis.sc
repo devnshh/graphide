@@ -29,17 +29,17 @@ import scala.util.Try
   println("[-] CPG Loaded.")
 
  val queries: List[(String, Cpg => Any)] = List(
-  ("call-to-gets", (cpg: Cpg) => cpg.method("(?i)gets").callIn),
+  ("call-to-gets", (cpg: Cpg) => cpg.method("(?i)^gets$").callIn),
 
-  ("call-to-getwd", (cpg: Cpg) => cpg.method("(?i)getwd").callIn),
+  ("call-to-getwd", (cpg: Cpg) => cpg.method("(?i)^getwd$").callIn),
 
-  ("call-to-scanf", (cpg: Cpg) => cpg.method("(?i)scanf").callIn),
+  ("call-to-scanf", (cpg: Cpg) => cpg.method("(?i)^scanf$").callIn),
 
-  ("call-to-strcat", (cpg: Cpg) => cpg.method("(?i)(strcat|strncat)").callIn),
+  ("call-to-strcat", (cpg: Cpg) => cpg.method("(?i)^(strcat|strncat)$").callIn),
 
-  ("call-to-strcpy", (cpg: Cpg) => cpg.method("(?i)(strcpy|strncpy)").callIn),
+  ("call-to-strcpy", (cpg: Cpg) => cpg.method("(?i)^(strcpy|strncpy)$").callIn),
 
-  ("call-to-strtok", (cpg: Cpg) => cpg.method("(?i)strtok").callIn),
+  ("call-to-strtok", (cpg: Cpg) => cpg.method("(?i)^strtok$").callIn),
 
 
   ("file-operation-race", (cpg: Cpg) => {
@@ -91,11 +91,11 @@ import scala.util.Try
 
   ("format-controlled-printf", (cpg: Cpg) => {
     val printfFns = cpg
-      .method("(?i)printf")
+      .method("(?i)^printf$")
       .callIn
       .whereNot(_.argument.order(1).isLiteral)
     val sprintsFns = cpg
-      .method("(?i)(sprintf|vsprintf)")
+      .method("(?i)^(sprintf|vsprintf)$")
       .callIn
       .whereNot(_.argument.order(2).isLiteral)
     (printfFns ++ sprintsFns)
@@ -191,7 +191,7 @@ import scala.util.Try
   ("malloc-memcpy-int-overflow", (cpg: Cpg) => {
     val src = cpg.method(".*malloc$").callIn.where(_.argument(1).arithmetic).l
 
-    cpg.method("(?i)memcpy").callIn.l.filter { memcpyCall =>
+    cpg.method("(?i)^memcpy$").callIn.l.filter { memcpyCall =>
       memcpyCall
         .argument(1)
         .reachableBy(src)
@@ -222,7 +222,7 @@ import scala.util.Try
   // ),
 
   ("strlen-truncation", (cpg: Cpg) => cpg.method
-    .name("(?i)strlen")
+    .name("(?i)^strlen$")
     .callIn
     .inAssignment
     .target
@@ -232,7 +232,7 @@ import scala.util.Try
   ("strncpy-no-null-term", (cpg: Cpg) => {
     val allocations = cpg.method(".*malloc$").callIn.argument(1).l
     cpg
-      .method("(?i)strncpy")
+      .method("(?i)^strncpy$")
       .callIn
       .map { c =>
         (c.method, c.argument(1), c.argument(3))

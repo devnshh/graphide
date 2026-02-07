@@ -55,11 +55,11 @@ Identify all applicable vulnerabilities, including but not limited to:
 
 ## **If No Vulnerabilities Are Found**
 
-You must explicitly explain:
+Briefly state:
 
-- Why the taint path is safe
-- What validations, bounds checks, or secure design patterns prevent exploitation
-- Why the final sink cannot be abused even under adversarial input
+- Why the code appears safe based on the provided context
+- Any visible validations or patterns that mitigate risk
+- (Optional) Why the sink seems protected
 
 
 ## **You Must Provide Remediation**

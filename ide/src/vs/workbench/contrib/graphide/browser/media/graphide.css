@@ -242,6 +242,7 @@
     white-space: pre-wrap;
     word-wrap: break-word;
     color: var(--vscode-foreground);
+    cursor: text;
 }
 
 /* Hover state for interactivity feedback */
@@ -686,6 +687,7 @@
         opacity: 0.2;
     }
 }
+
 /* ============================================================================
    New Layout Structure (Revamp)
    ============================================================================ */
@@ -702,7 +704,8 @@
 
 /* --- Navigation Sidebar (Left Icon Bar) --- */
 .graphide-nav-sidebar {
-    width: 48px; /* w-12 */
+    width: 48px;
+    /* w-12 */
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
@@ -756,7 +759,8 @@
 }
 
 .graphide-main-header {
-    height: 40px; /* h-10 */
+    height: 40px;
+    /* h-10 */
     background: var(--graphide-sidebar-bg);
     border-bottom: 1px solid var(--graphide-border);
     display: flex;
@@ -795,7 +799,8 @@
 }
 
 .graphide-card {
-    background: rgba(15, 23, 42, 0.5); /* slate-900/50 */
+    background: rgba(15, 23, 42, 0.5);
+    /* slate-900/50 */
     border: 1px solid var(--graphide-border);
     border-radius: 8px;
     padding: 16px;
@@ -867,7 +872,8 @@
 
 .graphide-badge.critical {
     background: rgba(220, 38, 38, 0.1);
-    color: #ef4444; /* red-500 */
+    color: #ef4444;
+    /* red-500 */
     border: 1px solid rgba(220, 38, 38, 0.2);
 }
 
@@ -879,7 +885,8 @@
 
 .graphide-badge.medium {
     background: rgba(234, 179, 8, 0.1);
-    color: var(--color-orange-300); /* yellow-ish */
+    color: var(--color-orange-300);
+    /* yellow-ish */
     border: 1px solid rgba(234, 179, 8, 0.2);
 }
 
