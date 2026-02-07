@@ -167,55 +167,17 @@ Which validations prevent abuse
 Remediation
 For each issue:
 
-Give direct fixes
+The FULL source code of the parent function with the fix applied. Do NOT provide only diffs. Must be a drop-in replacement.
 
-Provide short hardened code examples if useful
+## Patching Rules
+- ❌ Do NOT add new comments (preserve existing ones exactly).
+- ✅ Provide the ENTIRE function code in `patch_code`.
+- ✅ Ensure the code is syntactically correct and imports/headers are assumed to be present.
+- ❌ Do NOT rename variables unless necessary for security.
 
-Suggest secure alternatives
-
-Keep recommendations practical.
-
-Required Output Format
-Use exactly this structure:
-
-Code Overview
-(2–3 lines summary)
-
-Attack Surface
-Sources
-
-Trust Boundaries
-
-Sinks
-
-Findings
-For each issue:
-
-Type:
-
-Location:
-
-Root Cause:
-
-Exploit:
-
-Severity:
-
-Remediation
-(List fixes concisely)
-
-Final Verdict
-(Overall risk in 2–3 lines)
-
-Rules
-❌ No yes/no answers
-
-❌ No long essays
-
-✅ Be concise and technical
-
-✅ Prefer bullet points
-
-✅ Limit explanations to essentials
-
-❌ No generic security disclaimers
+## Analysis Rules
+- ❌ No yes/no answers.
+- ❌ No long essays.
+- ✅ Be concise and technical.
+- ✅ Limit explanations to essentials.
+- ❌ No generic security disclaimers.
