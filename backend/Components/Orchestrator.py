@@ -41,8 +41,11 @@ class Orchestrator:
             # Read file content
             content = ""
             if os.path.exists(request.filePath):
-                with open(request.filePath, 'r') as f:
-                    content = f.read()
+                if os.path.isdir(request.filePath):
+                    content = "" # AnalysisService will handle the directory copy
+                else:
+                    with open(request.filePath, 'r') as f:
+                        content = f.read()
             else:
                  return ScanResponse(status="error", message=f"File not found on backend: {request.filePath}")
 
