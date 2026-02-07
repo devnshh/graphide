@@ -191,12 +191,12 @@ class AnalysisService:
                     continue
                     
                 print(f"[Analysis] Analyzing target {idx+1}/{len(static_findings)}: {func_loc}")
-                logs.append(f"--> Analyzing target in {func_loc}...")
+                # logs.append(f"--> Analyzing target in {func_loc}...") # Filtered for cleaner UI
                 
                 # Ask Model Q
                 queries = self._generate_queries(func_code)
                 if not queries:
-                    logs.append(f"    Model Q produced no queries for this target.")
+                    # logs.append(f"    Model Q produced no queries for this target.") # Filtered
                     continue
                 
                 # Verify Code
@@ -215,10 +215,11 @@ class AnalysisService:
                 
                 if success and slices:
                     print(f"[Analysis] Verified {len(slices)} path(s) for target {idx+1}")
-                    logs.append(f"    Verified {len(slices)} vulnerability path(s).")
+                    logs.append(f"    Verified {len(slices)} vulnerability path(s) in {func_loc}")
                     all_slices.extend(slices)
                 else:
-                    logs.append(f"    No executable paths verified.")
+                    # logs.append(f"    No executable paths verified.") # Filtered
+                    pass
 
             
             if not all_slices:
