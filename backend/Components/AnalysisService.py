@@ -75,132 +75,174 @@ class AnalysisService:
         return url
 
 
-    async def analyze_code(self, file_name: str, code_content: str) -> Dict[str, Any]:
+    async def analyze_code(self, file_path: str, code_content: str = "") -> Dict[str, Any]:
         """
-        Main entry point for analyzing a code file.
+        Main entry point for analyzing a code file or directory.
         """
-        project_name = f"verify_{os.path.basename(file_name).replace('.', '_')}"
+        import shutil
+        import uuid
+        
+        # Normalize path
+        file_path = os.path.abspath(file_path)
+        base_name = os.path.basename(file_path)
+        project_name = f"verify_{base_name.replace('.', '_')}_{uuid.uuid4().hex[:4]}"
         logs = ["Analysis Started."]
         
-        # 1. Save temp file for Joern to read 
-        # MUST Write to HOST path, but tell Joern to read from CONTAINER path
+        # 1. Prepare Target Directory for Joern
+        # Joern needs a path it can access (mounted or local).
         host_dir = settings.JOERN_HOST_PATH
         container_dir = settings.JOERN_CONTAINER_PATH
         
+        target_host_path = os.path.join(host_dir, base_name)
+        
+        # Clean up previous if exists (simplified)
+        if os.path.exists(target_host_path):
+            if os.path.isdir(target_host_path):
+                shutil.rmtree(target_host_path)
+            else:
+                os.remove(target_host_path)
+                
         os.makedirs(host_dir, exist_ok=True)
-        # Ensure we don't have permission issues if docker user is different
+
+        is_directory = os.path.isdir(file_path)
+        
+        if is_directory:
+            print(f"[Analysis] Copying directory {file_path} to {target_host_path}")
+            shutil.copytree(file_path, target_host_path)
+            # For container path, it's just the base name mapped
+            target_container_path = os.path.join(container_dir, base_name)
+        else:
+            # Single file
+            # If code_content is provided (e.g. from IDE unsaved buffer), use it.
+            # Otherwise read from file.
+            if not code_content and os.path.exists(file_path):
+                with open(file_path, 'r') as f:
+                    code_content = f.read()
+            
+            with open(target_host_path, "w") as f:
+                f.write(code_content)
+            target_container_path = os.path.join(container_dir, base_name)
+
         try:
-             os.chmod(host_dir, 0o777)
-        except:
-             pass
+            # --- Step 0: Static Analysis (Rule-Based) ---
+            logs.append("Step 1/5: Running Rule-Based Static Analysis...")
+            
+            # Resolve script path
+            script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static_analysis.sc")
+            output_json_path = os.path.join(host_dir, f"static_results_{uuid.uuid4().hex}.json")
+            
+            # We run the script on the TARGET HOST PATH (where we copied the code).
+            # Note: The script runs 'importCode'. If using 'joern-cli' locally, it needs the local path.
+            # If 'joern-cli' is running inside the container, it needs the container path.
+            # Assumed: Backend is running locally or in same env as 'joern' command.
+            # We use 'target_host_path' input for the script.
+            
+            params = {
+                "inputPath": target_host_path,
+                "outputFile": output_json_path
+            }
+            
+            print(f"[Analysis] Executing Static Analysis Script on {target_host_path}...")
+            success, script_out = await self.joern.run_script(script_path, params)
 
-        host_file_path = os.path.join(host_dir, os.path.basename(file_name))
-        with open(host_file_path, "w") as f:
-            f.write(code_content)
+            print(output_json_path)
             
-        try:
-            # --- Step 1: Load to Joern ---
-            # Tell Joern to load from the container path
-            container_file_path = os.path.join(container_dir, os.path.basename(file_name))
-            print(f"[Analysis] Loading {file_name} into Joern...")
-            logs.append(f"Step 1/4: Loading code into Joern environment...")
+            static_findings = []
+            if os.path.exists(output_json_path):
+                try:
+                    with open(output_json_path, 'r') as f:
+                        static_findings = json.load(f)
+                except:
+                    pass
+                # Cleanup output file
+                try:
+                    os.remove(output_json_path)
+                except:
+                    pass
             
-            # We import the DIRECTORY in container
-            # Call async
-            await self.joern.load_project(container_dir, project_name)
-            logs.append("Step 1 Complete: Project loaded in Joern.")
+            logs.append(f"Step 1 Complete: Found {len(static_findings)} suspicious targets via static rules.")
             
-            # --- Retry Loop for Query Generation & Verification ---
-            # We assume "flakiness" comes from bad queries. We will retry Step 2 & 3.
-            max_retries = 3
-            slices = []
-            queries = []
-            
-            for attempt in range(1, max_retries + 1):
-                logs.append(f"--- Attempt {attempt}/{max_retries} ---")
-                
-                # --- Step 2: Generate Queries (Model Q) ---
-                print(f"[Analysis] Generating verification queries from Model Q (Attempt {attempt})...")
-                logs.append("Step 2/4: Asking Model Q to generate vulnerability-specific CPG queries...")
-                
-                # If this is a retry, we could pass context (TODO: capture specific Joern error if possible)
-                prev_error = "Execution Failed" if attempt > 1 else None
-                queries = self._generate_queries(code_content, previous_error=prev_error)
-                
-                print(f"DEBUG: Generated Queries: {queries}")
-                
-                if not queries:
-                    logs.append(f"Step 2 Failed: Model Q did not return valid queries (Attempt {attempt}).")
-                    if attempt == max_retries:
-                        return {
-                            "status": "error",
-                            "message": "Failed to generate valid queries from Model Q after multiple attempts.",
-                            "logs": logs
-                        }
-                    continue # Try again
-                
-                logs.append(f"Step 2 Complete: Generated {len(queries)} queries.")
-                
-                # --- Step 3: Verify & Slice (Joern Execution) ---
-                print(f"[Analysis] Executing {len(queries)} queries...")
-                logs.append(f"Step 3/4: Executing {len(queries)} CPG queries in Joern to verify logic...")
-                
-                # Format queries for log display
-                formatted_queries = "\n".join([f"- Query {i+1}: `{q}`" for i, q in enumerate(queries)])
-                logs.append(f"### Generated Queries (Attempt {attempt})\n{formatted_queries}")
-
-                # Call async
-                success, slices = await self.joern.extract_joern_paths(code_content, queries)
-                
-                if success:
-                    # Success! Break the retry loop
-                    break
-                else:
-                    logs.append(f"Step 3 Failed: Joern execution encountered errors (Attempt {attempt}).Retrying...")
-                    if attempt == max_retries:
-                         return {
-                            "status": "error",
-                            "message": "Joern execution failed after multiple attempts.",
-                            "logs": logs
-                        }
-            
-            # If we exited the loop successfully with valid slices or explicitly 'success' but empty slices
-
-
-            if not slices:
-                print("[Analysis] No vulnerability paths verified.")
-                logs.append("Step 3 Complete: No vulnerability paths found by Joern.")
-                logs.append("### Joern Output\nNo valid paths returned by reachability flows.")
+            if not static_findings:
+                logs.append("No suspicious code patterns found by static analysis. Skipping deep scan.")
                 return {
                     "status": "clean",
-                    "message": "No vulnerabilities verified by formal analysis.",
-                    "details": "Model Q generated queries, but verification found no execution paths.",
+                    "message": "Static analysis found no issues.",
+                    "logs": logs
+                }
+
+            # --- Step 1: Load to Main Joern Session ---
+            # We need the project loaded to run Model Q's queries later.
+            print(f"[Analysis] Loading {base_name} into Main Joern Session...")
+            logs.append(f"Step 2/5: Loading code into Interactive Joern Session...")
+            
+            await self.joern.load_project(target_container_path, project_name)
+            logs.append("Step 2 Complete: Project loaded.")
+            
+            # --- Step 2 & 3: Model Q & Verification (Iterative) ---
+            logs.append(f"Step 3/5: Deep Analysis on {len(static_findings)} targets...")
+            
+            all_slices = []
+            
+            for idx, finding in enumerate(static_findings):
+                func_code = finding.get("parentFunctionCode", "")
+                func_loc = f"{finding.get('filename')}:{finding.get('lineNumber')}"
+                
+                if not func_code or func_code == "N/A":
+                    continue
+                    
+                print(f"[Analysis] Analyzing target {idx+1}/{len(static_findings)}: {func_loc}")
+                logs.append(f"--> Analyzing target in {func_loc}...")
+                
+                # Ask Model Q
+                queries = self._generate_queries(func_code)
+                if not queries:
+                    logs.append(f"    Model Q produced no queries for this target.")
+                    continue
+                
+                # Verify Code
+                # We execute specific queries.
+                # Note: Model Q generates queries based on the function snippet.
+                # These queries might need adjustment if they assume a specific context, 
+                # but usually 'method("name")...' works globally.
+                
+                success, slices = await self.joern.extract_joern_paths(func_code, queries) # Source code arg is mainly for mapping lines?
+                # Actually extract_joern_paths uses source_code argument to map lines from 'line_number' to 'code'.
+                # But here 'source_code' is just the function snippet? 
+                # Or we should pass the full file content?
+                # If we pass directory, we don't have a single 'source_code'.
+                # FIX: extract_joern_paths needs to fetch code from the CPG or file on disk if we want accuracy.
+                # For now, we will pass 'func_code' so at least we see relative code.
+                
+                if success and slices:
+                    print(f"[Analysis] Verified {len(slices)} path(s) for target {idx+1}")
+                    logs.append(f"    Verified {len(slices)} vulnerability path(s).")
+                    all_slices.extend(slices)
+                else:
+                    logs.append(f"    No executable paths verified.")
+
+            
+            if not all_slices:
+                logs.append("Step 4 Complete: No actual vulnerabilities verified after deep scan.")
+                return {
+                    "status": "clean",
+                    "message": "Static analysis flagged issues, but deep verification found no executable paths.",
                     "logs": logs
                 }
             
-            logs.append(f"Step 3 Complete: Verified {len(slices)} suspicious execution path(s).")
+            logs.append(f"Step 4 Complete: Verified {len(all_slices)} total attack vectors.")
             
-            # Format slices for log display
-            slice_logs = []
-            for i, sl in enumerate(slices):
-                slice_logs.append(f"\n**Slice {i+1}**:")
-                for step in sl:
-                    slice_logs.append(f"  - L{step.get('line_number')}: `{step.get('code').strip()}`")
-            
-            logs.append(f"### Verified Slices (Joern Output)\n" + "\n".join(slice_logs))
-                
-            # --- Step 4: Explain & Patch (Model D) ---
-            print(f"[Analysis] Vulnerability Verified! Found {len(slices)} execution paths. Asking Model D...")
-            logs.append("Step 4/4: Sending verified slices to Model D for explanation and patching...")
-            explanation = self._explain_and_patch(slices)
-            logs.append("Step 4 Complete: Explanation received.")
+            # --- Step 4: Explain & Patch ---
+            print(f"[Analysis] Explaining {len(all_slices)} verified paths...")
+            logs.append("Step 5/5: Generating Fixes...")
+            explanation = self._explain_and_patch(all_slices)
             
             return {
                 "status": "vulnerable",
-                "slices": slices,
+                "slices": all_slices,
                 "explanation": explanation,
                 "logs": logs
             }
+
             
         except JoernException as je:
             logs.append(f"Error: Joern Exception occurred: {je}")

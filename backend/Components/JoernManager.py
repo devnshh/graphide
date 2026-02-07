@@ -170,7 +170,7 @@ class JoernManager:
         # This is the "Magic" slicing step
         json_transform = (
             ".map(flow => flow.elements.map(node => "
-            "Map(\"id\" -> node.id, \"line_number\" -> node.lineNumber)"
+            "Map(\"id\" -> node.id, \"line_number\" -> node.lineNumber, \"code\" -> node.code)"
             ")).toJsonPretty"
         )
         final_query = reachability_query + json_transform
@@ -211,6 +211,45 @@ class JoernManager:
         # Slice the code
         return True, self._map_paths_to_code(source_code, paths_data)
 
+    async def run_script(self, script_path: str, params: Dict[str, str]) -> Tuple[bool, str]:
+        """
+        Run a standalone Joern script using the 'joern' CLI.
+        This runs in a separate process/JVM async.
+        
+        Args:
+            script_path: Absolute path to the .sc script
+            params: Dictionary of parameters to pass to the script
+        """
+        import asyncio
+        
+        # Construct parameters string
+        # joern --script script.sc --param inputPath=... --param outputFile=...
+        cmd = ["joern", "--script", script_path]
+        for k, v in params.items():
+            cmd.extend([f"--param", f"{k}={v}"])
+            
+        print(f"[JoernManager] Executing: {' '.join(cmd)}")
+        
+        try:
+            process = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            
+            stdout, stderr = await process.communicate()
+            
+            if process.returncode != 0:
+                error_msg = stderr.decode().strip()
+                print(f"[JoernManager] Script failed: {error_msg}")
+                return False, error_msg
+                
+            return True, stdout.decode().strip()
+            
+        except Exception as e:
+            print(f"[JoernManager] Exception running script: {e}")
+            return False, str(e)
+
     def _map_paths_to_code(self, source_code: str, paths_json: List[List[Dict]]) -> List[List[Dict]]:
         """
         Internal helper to slice the source code based on line numbers.
@@ -233,3 +272,4 @@ class JoernManager:
                 sliced_paths.append(slice_)
                 
         return sliced_paths
+
