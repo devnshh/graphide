@@ -48,12 +48,18 @@ class AnalysisService:
             
         # Load System Prompt
         self.system_prompt_text = "You are a vulnerability analysis expert."
+        self.directory_system_prompt_text = self.system_prompt_text
         try:
             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             prompt_path = os.path.join(base_dir, "system_prompt.txt")
             if os.path.exists(prompt_path):
                 with open(prompt_path, "r") as f:
                     self.system_prompt_text = f.read()
+
+            dir_prompt_path = os.path.join(base_dir, "System_prompt_directory.txt")
+            if os.path.exists(dir_prompt_path):
+                with open(dir_prompt_path, "r") as f:
+                    self.directory_system_prompt_text = f.read()
         except Exception as e:
             print(f"Error loading system prompt: {e}")
 
@@ -216,7 +222,15 @@ class AnalysisService:
                 if success and slices:
                     print(f"[Analysis] Verified {len(slices)} path(s) for target {idx+1}")
                     logs.append(f"    Verified {len(slices)} vulnerability path(s) in {func_loc}")
-                    all_slices.extend(slices)
+                    
+                    # Store finding context (file, code, slices)
+                    finding_context = {
+                        "file": finding.get("filename"),
+                        "line": finding.get("lineNumber"),
+                        "code": func_code,
+                        "slices": slices
+                    }
+                    all_slices.append(finding_context)
                 else:
                     # logs.append(f"    No executable paths verified.") # Filtered
                     pass
@@ -235,7 +249,7 @@ class AnalysisService:
             # --- Step 4: Explain & Patch ---
             print(f"[Analysis] Explaining {len(all_slices)} verified paths...")
             logs.append("Step 5/5: Generating Fixes...")
-            explanation = self._explain_and_patch(all_slices)
+            explanation = self._explain_and_patch(all_slices, is_directory=is_directory)
             
             return {
                 "status": "vulnerable",
@@ -352,7 +366,7 @@ JSON with one field "queries"
         print(f"DEBUG: Model Q Raw Response: {response_text}")
         return self._extract_queries_from_text(response_text)
 
-    def _explain_and_patch(self, slices: List[List[Dict]]) -> Any:
+    def _explain_and_patch(self, slices: List[List[Dict]], is_directory: bool = False) -> Any:
         """
         Ask Gemini (or Model D fallback) to explain the verified slices and suggest a patch.
         Uses system_prompt.txt for instructions.
@@ -363,7 +377,7 @@ JSON with one field "queries"
         if self.gemini_client:
             try:
                 prompt_content = f"""
-Here are the exact execution traces (Slices) that cause the issue:
+Here are the verified execution traces AND source code contexts that cause the issue:
 
 {slice_text}
 
@@ -373,7 +387,7 @@ Analyze the slices based on the system instructions and provide the explanation,
                     model="gemini-3-flash-preview", 
                     contents=prompt_content,
                     config=types.GenerateContentConfig(
-                        system_instruction=self.system_prompt_text
+                        system_instruction=self.directory_system_prompt_text if is_directory else self.system_prompt_text
                         # Removed response_mime_type="application/json" to allow Markdown output
                     )
                 )
@@ -390,7 +404,7 @@ Analyze the slices based on the system instructions and provide the explanation,
         
         prompt = f"""
 I have mathematically verified a vulnerability in the code provided.
-Here are the exact execution traces (Slices) that cause the issue:
+Here are the verified execution traces AND source code contexts that cause the issue:
 
 {slice_text}
 
