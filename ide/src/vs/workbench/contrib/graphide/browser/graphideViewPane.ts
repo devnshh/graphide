@@ -42,6 +42,7 @@ interface VulnerabilityData {
     file: string;
     line: number;
     status: 'open' | 'fixed' | 'in_review';
+    cwe?: string;
 }
 
 type ViewType = 'editor' | 'dashboard' | 'graph' | 'settings';
@@ -63,11 +64,7 @@ export class GraphIDEViewPane extends ViewPane {
     private errorCount: number = 0;
 
     // Mock Data for Dashboard
-    private vulnerabilities: VulnerabilityData[] = [
-        { id: "VULN-2024-001", severity: "critical", type: "SQL Injection", file: "src/auth_service.ts", line: 14, status: "open" },
-        { id: "VULN-2024-002", severity: "high", type: "XSS Vulnerability", file: "src/frontend/profile.tsx", line: 45, status: "in_review" },
-        { id: "VULN-2024-005", severity: "critical", type: "Remote Code Execution", file: "src/server/upload.ts", line: 88, status: "open" }
-    ];
+    private vulnerabilities: VulnerabilityData[] = [];
 
     constructor(
         options: IViewPaneOptions,
@@ -246,11 +243,15 @@ export class GraphIDEViewPane extends ViewPane {
         sub.style.color = 'var(--color-slate-500)';
         sub.style.marginTop = '4px';
 
+        // Calculate Metrics
+        const criticalCount = this.vulnerabilities.filter(v => v.severity === 'critical').length;
+        const totalCount = this.vulnerabilities.length;
+
         // Metrics Grid
         const grid = dom.append(dashboard, dom.$('.graphide-metric-grid'));
-        this.createMetricCard(grid, 'Critical Issues', '2', '+1', 'critical');
-        this.createMetricCard(grid, 'Open Findings', '3', '+3', 'info');
-        this.createMetricCard(grid, 'Fix Rate', '84%', '+12%', 'success');
+        this.createMetricCard(grid, 'Critical Issues', criticalCount.toString(), '', 'critical');
+        this.createMetricCard(grid, 'Open Findings', totalCount.toString(), 'new', 'info');
+        this.createMetricCard(grid, 'Fix Rate', '0%', '', 'success'); // Placeholder, requires history
 
         // Table
         const tableContainer = dom.append(dashboard, dom.$('.graphide-table-container'));
@@ -281,7 +282,7 @@ export class GraphIDEViewPane extends ViewPane {
 
             // Type
             const tdType = dom.append(tr, dom.$('td'));
-            tdType.textContent = vuln.type;
+            tdType.textContent = vuln.type + (vuln.cwe ? ` (${vuln.cwe})` : '');
             tdType.style.fontWeight = '500';
             tdType.style.color = 'var(--color-slate-200)';
 
@@ -500,12 +501,22 @@ export class GraphIDEViewPane extends ViewPane {
             const dots = loadingEl.querySelector('.graphide-loading-dots');
             if (dots) dots.remove();
 
+            if (data?.vulnerabilities && Array.isArray(data.vulnerabilities)) {
+                this.vulnerabilities = data.vulnerabilities as VulnerabilityData[];
+
+                // Refresh Dashboard UI with new data
+                if (this.dashboardContainer) {
+                    dom.clearNode(this.dashboardContainer);
+                    this.renderDashboardView(this.dashboardContainer);
+                }
+
+                // Notify user
+                this.addMessageWithStreamOption('system', `Found ${this.vulnerabilities.length} vulnerabilities. Check the Dashboard.`, 'warning');
+            }
+
             if (data?.agentOutputs && data.agentOutputs.length > 0) {
                 for (const output of data.agentOutputs) {
                     this.addMessageWithStreamOption('system', output.markdownOutput || output.message || 'No content', 'normal', true);
-
-                    // Hook: If vulnerabilities found, update dashboard mock data?
-                    // For now we just display in chat.
                 }
             } else if (data?.message) {
                 this.addMessageWithStreamOption('system', data.message, data.status === 'error' ? 'error' : 'normal', true);
