@@ -85,10 +85,12 @@ class Orchestrator:
                      text = explanation_data.get("explanation", "Vulnerability detected.")
                      reasoning = explanation_data.get("fix_reasoning", "No reasoning provided.")
                      patch_code = explanation_data.get("patch_code", "")
+                     vulnerabilities_list = explanation_data.get("vulnerabilities", [])
                  else:
                      text = str(explanation_data)
                      patch_code = ""
                      reasoning = ""
+                     vulnerabilities_list = []
 
                  # 1. Main Vulnerability Report
                  # User requested logs BEFORE explanation
@@ -113,11 +115,13 @@ class Orchestrator:
                      markdownOutput=f"{result.get('message', 'No vulnerabilities found.')}\n\n#### Analysis Log\n{log_md}",
                      metadata={"stage": "Scan"}
                  ))
+                 vulnerabilities_list = []
 
             return ScanResponse(
                 status="success",
                 agentOutputs=agent_outputs,
                 patchProposals=patch_proposals,
+                vulnerabilities=vulnerabilities_list,
                 validationStatus=validation_status
             )
 

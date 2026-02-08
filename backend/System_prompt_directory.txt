@@ -77,7 +77,7 @@ You must output your analysis using **exactly** this structure:
 
 
 Code Overview
-Brief description of what the taint path and code do.
+Brief description of what the taint path and code do. 
 
 Attack Surface Analysis
 List all data entry points, trust boundaries, transformations, and sensitive sinks.
@@ -86,6 +86,7 @@ Vulnerability Findings
 For each issue:
 
 Type
+CWE/CVE Details
 Location
 Root cause
 Exploit scenario

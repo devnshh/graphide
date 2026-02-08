@@ -86,6 +86,7 @@ Vulnerability Findings
 For each issue:
 
 Type
+CWE/CVE Details
 Location
 Root cause
 Exploit scenario
@@ -167,8 +168,7 @@ Which validations prevent abuse
 Remediation
 For each issue:
 
-The FULL source code of the parent function with the fix applied. Do NOT provide only diffs. Must be a drop-in replacement.
-
+The FULL source code of the parent function with the fix applied. Do NOT provide only diffs. Must be a drop-in replacement as a fully patched function for the file, clearly grouped by filename and location.
 ## Patching Rules
 - ❌ Do NOT add new comments (preserve existing ones exactly).
 - ✅ Provide the ENTIRE function code in `patch_code`.

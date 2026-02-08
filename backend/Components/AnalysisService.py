@@ -397,22 +397,58 @@ Here are the verified execution traces AND source code contexts that cause the i
 
 {slice_text}
 
-Analyze the slices based on the system instructions and provide the explanation, patch, and reasoning.
+Analyze the slices based on the system instructions and provide a JSON response with the following keys:
+1. "vulnerabilities": A list of objects, each containing:
+   - "id": A generated ID (e.g., VULN-YYYY-NNN).
+   - "severity": "critical", "high", "medium", or "low".
+   - "type": The vulnerability type (e.g., SQL Injection).
+   - "file": The file path where the vulnerability is located.
+   - "line": The line number where the vulnerability is located (integer).
+   - "description": A short description.
+   - "cwe": The CWE ID (e.g., CWE-89).
+   - "status": "open"
+2. "explanation": The full markdown explanation as per system instructions (Code Overview, Attack Surface, Findings, etc.).
+3. "patch_code": The complete patched code.
+4. "fix_reasoning": Explanation of why the patch works.
+
+Ensure the output is valid JSON.
 """
                 response = self.gemini_client.models.generate_content(
                     model="gemini-3-flash-preview", 
                     contents=prompt_content,
                     config=types.GenerateContentConfig(
-                        system_instruction=self.directory_system_prompt_text if is_directory else self.system_prompt_text
-                        # Removed response_mime_type="application/json" to allow Markdown output
+                        system_instruction=self.directory_system_prompt_text if is_directory else self.system_prompt_text,
+                        response_mime_type="application/json"
                     )
                 )
                 
                 response_text = response.text
                 print(f"[Analysis] Gemini Response received: {len(response_text)} chars")
                 
-                # Return the raw text (Markdown) directly for better UI rendering
-                return response_text
+                # Clean up markdown code blocks if present
+                clean_text = response_text.strip()
+                if clean_text.startswith("```"):
+                    import re
+                    # Match ```json or ``` at start
+                    clean_text = re.sub(r"^```\w*\s*", "", clean_text)
+                    # Match ``` at end
+                    clean_text = re.sub(r"\s*```$", "", clean_text)
+                
+                try:
+                    return json.loads(clean_text)
+                except json.JSONDecodeError:
+                    print("[Analysis] Gemini returned invalid JSON (initial parse failed). Attempting regex extraction.")
+                    import re
+                    # Try to find the outermost JSON object
+                    match = re.search(r'\{.*\}', clean_text, re.DOTALL)
+                    if match:
+                        try:
+                            return json.loads(match.group(0))
+                        except:
+                            pass
+                    
+                    # Fallback: treat as raw markdown
+                    return {"explanation": response_text, "vulnerabilities": [], "patch_code": "", "fix_reasoning": ""}
                     
             except Exception as e:
                 print(f"[Analysis] Gemini Error: {e}. Falling back to Model D.")
@@ -428,8 +464,9 @@ Task:
 1. Explain WHY this flow is a vulnerability.
 2. Provide a fixed version of the code (PATCH).
 3. Explain why the patch fixes the path.
+4. List specific vulnerability metadata (id, severity, type, file, line).
 
-Output format: JSON with keys "explanation", "patch_code", "fix_reasoning".
+Output format: JSON with keys "explanation", "patch_code", "fix_reasoning", "vulnerabilities".
 """
         response_text = self._call_model_api(self.d_url, prompt)
         
@@ -442,7 +479,7 @@ Output format: JSON with keys "explanation", "patch_code", "fix_reasoning".
                 return json.loads(match.group(0))
             return json.loads(response_text)
         except:
-            return {"explanation": response_text, "patch_code": "", "fix_reasoning": ""}
+            return {"explanation": response_text, "patch_code": "", "fix_reasoning": "", "vulnerabilities": []}
             
     def _extract_queries_from_text(self, text: str) -> List[str]:
         """

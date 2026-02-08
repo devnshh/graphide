@@ -66,6 +66,7 @@ class ScanResponse(StandardResponse):
     status: str  # "success", "error", "processing"
     agentOutputs: Optional[List[AgentOutput]] = None
     patchProposals: Optional[List[dict]] = None
+    vulnerabilities: Optional[List[dict]] = None
     validationStatus: Optional[dict] = None
 
 
