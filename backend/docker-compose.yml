@@ -6,3 +6,17 @@ services:
       - "8080:8080"
     volumes:
       - /tmp/graphide_exchange:/data/exchange
+
+  neo4j:
+    image: neo4j:5-community
+    ports:
+      - "7474:7474"   # Browser UI
+      - "7687:7687"   # Bolt driver
+    environment:
+      NEO4J_AUTH: neo4j/graphide123
+      NEO4J_PLUGINS: '[]'
+    volumes:
+      - neo4j_data:/data
+
+volumes:
+  neo4j_data:

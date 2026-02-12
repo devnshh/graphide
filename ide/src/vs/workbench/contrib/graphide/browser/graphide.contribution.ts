@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Graphide Panel Contribution
- *  Stage 1: Pure UI - No agent logic
+ *  Webview-based: Loads React app inside sidebar panel
  *--------------------------------------------------------------------------------------------*/
 
 import { localize, localize2 } from '../../../../nls.js';
@@ -9,7 +9,6 @@ import { Codicon } from '../../../../base/common/codicons.js';
 import { Registry } from '../../../../platform/registry/common/platform.js';
 import { IViewsRegistry, Extensions as ViewExtensions, IViewContainersRegistry, ViewContainerLocation } from '../../../common/views.js';
 import { SyncDescriptor } from '../../../../platform/instantiation/common/descriptors.js';
-import { GraphIDEViewPane } from './graphideViewPane.js';
 import { ViewPaneContainer } from '../../../browser/parts/views/viewPaneContainer.js';
 import { IStatusbarService, StatusbarAlignment } from '../../../services/statusbar/browser/statusbar.js';
 import { IWorkbenchContribution, Extensions as WorkbenchExtensions, IWorkbenchContributionsRegistry } from '../../../common/contributions.js';
@@ -17,6 +16,9 @@ import { LifecyclePhase } from '../../../services/lifecycle/common/lifecycle.js'
 import { CommandsRegistry } from '../../../../platform/commands/common/commands.js';
 import { IViewsService } from '../../../services/views/common/viewsService.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
+import { WebviewViewPane } from '../../webviewView/browser/webviewViewPane.js';
+import { GraphideWebviewProvider } from './graphideWebviewProvider.js';
+import { registerWorkbenchContribution2, WorkbenchPhase } from '../../../common/contributions.js';
 
 // Register the GraphIDE icon
 const graphideViewIcon = registerIcon('graphide-view-icon', Codicon.hubot, localize('graphideViewIcon', 'View icon of the Graphide panel.'));
@@ -32,11 +34,11 @@ const VIEW_CONTAINER = Registry.as<IViewContainersRegistry>(ViewExtensions.ViewC
 	hideIfEmpty: false
 }, ViewContainerLocation.AuxiliaryBar, { isDefault: false });
 
-// Register the view (the actual panel content)
+// Register the view as a webview view (renders React app)
 Registry.as<IViewsRegistry>(ViewExtensions.ViewsRegistry).registerViews([{
 	id: 'graphide.panel',
 	name: localize2('graphidePanel', 'Graphide'),
-	ctorDescriptor: new SyncDescriptor(GraphIDEViewPane),
+	ctorDescriptor: new SyncDescriptor(WebviewViewPane),
 	canToggleVisibility: true,
 	canMoveView: true,
 	hideByDefault: false,
@@ -45,13 +47,13 @@ Registry.as<IViewsRegistry>(ViewExtensions.ViewsRegistry).registerViews([{
 	focusCommand: { id: 'graphide.focus' }
 }], VIEW_CONTAINER);
 
+// Register the webview provider (resolves React content into the webview)
+registerWorkbenchContribution2(GraphideWebviewProvider.ID, GraphideWebviewProvider, WorkbenchPhase.AfterRestored);
+
 // Register the "Analyze" command
 CommandsRegistry.registerCommand('graphide.analyze', async (accessor) => {
 	const viewsService = accessor.get(IViewsService);
-	const view = await viewsService.openView(GraphIDEViewPane.ID, true);
-	if (view instanceof GraphIDEViewPane) {
-		view.handleAnalyze();
-	}
+	await viewsService.openView('graphide.panel', true);
 });
 
 // Register Status Bar Contribution
