@@ -516,12 +516,19 @@ export class GraphIDEViewPane extends ViewPane {
 
             if (data?.agentOutputs && data.agentOutputs.length > 0) {
                 for (const output of data.agentOutputs) {
-                    this.addMessageWithStreamOption('system', output.markdownOutput || output.message || 'No content', 'normal', true);
+                    this.addMessageWithStreamOption('system', output.markdownOutput || output.message.toString() || 'No content', 'normal', true);
                 }
             } else if (data?.message) {
-                this.addMessageWithStreamOption('system', data.message, data.status === 'error' ? 'error' : 'normal', true);
+                this.addMessageWithStreamOption('system', data.message.toString(), data.status === 'error' ? 'error' : 'normal', true);
             } else {
                 this.addMessageWithStreamOption('system', 'Analysis completed with no specific output.', 'warning');
+            }
+
+            if (data?.patchProposals && Array.isArray(data.patchProposals) && data.patchProposals.length > 0) {
+                data.patchProposals.forEach((proposal: any) => {
+                    const md = `### ${proposal.description || 'Recommended Patch'}\n\n\`\`\`${payload.language}\n${proposal.code}\n\`\`\``;
+                    this.addMessageWithStreamOption('system', md, 'normal', false);
+                });
             }
 
         } catch (error) {

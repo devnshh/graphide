@@ -454,7 +454,11 @@ Ensure the output is valid JSON.
                 print(f"[Analysis] Gemini Error: {e}. Falling back to Model D.")
                 # Fallback to Model D logic below
         
+        system_instruction = self.directory_system_prompt_text if is_directory else self.system_prompt_text
         prompt = f"""
+{system_instruction}
+
+        
 I have mathematically verified a vulnerability in the code provided.
 Here are the verified execution traces AND source code contexts that cause the issue:
 

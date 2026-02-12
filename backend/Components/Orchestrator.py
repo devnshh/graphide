@@ -81,6 +81,11 @@ class Orchestrator:
             if result["status"] == "vulnerable":
                  explanation_data = result.get("explanation", {})
                  # Handle raw text or structured
+                 if isinstance(explanation_data, list) and len(explanation_data) > 0:
+                     # If Gemini returned a list of objects, take the first one or aggregate
+                     # For now, we assume the first object contains the main analysis
+                     explanation_data = explanation_data[0]
+
                  if isinstance(explanation_data, dict):
                      text = explanation_data.get("explanation", "Vulnerability detected.")
                      reasoning = explanation_data.get("fix_reasoning", "No reasoning provided.")
