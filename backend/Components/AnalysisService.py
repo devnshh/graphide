@@ -204,7 +204,7 @@ class AnalysisService:
                 
                 if queries is None:
                     # Critical Failure: Model Q is down or erroring
-                    error_msg = f"Analysis Aborted: Model Q API failed for {filename}."
+                    error_msg = f"Analysis Aborted: Model Q API failed for {base_name}."
                     logs.append(f"    CRITICAL ERROR: {error_msg}")
                     return {
                         "status": "error",
@@ -213,7 +213,7 @@ class AnalysisService:
                     }
                 
                 if not queries:
-                    logs.append(f"    Model Q produced no queries for {filename}.")
+                    logs.append(f"    Model Q produced no queries for {base_name}.")
                     continue
                 
                 # Verify Code
