@@ -23,7 +23,8 @@ backend/.coverage
 backend/.coverage.*
 backend/.pytest_cache/
 backend/docs/_build/
-
+backend/*.txt
+backend/*.md
 # IDE folder
 # ide/ (Commented out to include the frontend in the repo)
 .vscode/
