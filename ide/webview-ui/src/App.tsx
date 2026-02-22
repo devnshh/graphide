@@ -186,10 +186,10 @@ function App() {
             <nav className="sidebar">
                 <div className="sidebar-top">
                     <div className="brand-icon">G</div>
-                    <NavButton icon="⚡" label="Analysis" view="analysis" active={activeView} onClick={setActiveView} />
-                    <NavButton icon="📊" label="Dashboard" view="dashboard" active={activeView} onClick={setActiveView}
+                    <NavButton icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg>} label="Analysis" view="analysis" active={activeView} onClick={setActiveView} />
+                    <NavButton icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="12" width="4" height="9" rx="1" /><rect x="10" y="7" width="4" height="14" rx="1" /><rect x="17" y="3" width="4" height="18" rx="1" /></svg>} label="Dashboard" view="dashboard" active={activeView} onClick={setActiveView}
                         badge={totalCount > 0 ? totalCount : undefined} />
-                    <NavButton icon="🔀" label="Graph" view="graph" active={activeView} onClick={setActiveView} />
+                    <NavButton icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="6" cy="6" r="3" /><circle cx="18" cy="18" r="3" /><path d="M6 21V9a9 9 0 0 0 9 9" /></svg>} label="Graph" view="graph" active={activeView} onClick={setActiveView} />
                 </div>
                 <div className="sidebar-bottom">
                     <div className={`status-indicator ${backendStatus}`} title={`Backend: ${backendStatus}`}>
@@ -233,7 +233,7 @@ function App() {
 // ─── NavButton ───────────────────────────────────────────────────────────────
 
 function NavButton({ icon, label, view, active, onClick, badge }: {
-    icon: string; label: string; view: ViewType;
+    icon: React.ReactNode; label: string; view: ViewType;
     active: ViewType; onClick: (v: ViewType) => void;
     badge?: number;
 }) {
@@ -276,7 +276,7 @@ function AnalysisView({ selectedFile, isAnalyzing, progress, results, error, bac
             {/* File Selection + Action */}
             <div className="toolbar">
                 <button className="file-select-btn" onClick={onSelectFile} disabled={isAnalyzing}>
-                    <span className="file-icon">📁</span>
+                    <span className="file-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /></svg></span>
                     {selectedFile ? (
                         <span className="file-chip">
                             <span className="chip-name">{selectedFile.name}</span>
@@ -301,19 +301,19 @@ function AnalysisView({ selectedFile, isAnalyzing, progress, results, error, bac
                     {isAnalyzing ? (
                         <><div className="spinner" /><span>Analyzing...</span></>
                     ) : (
-                        <><span>⚡</span><span>Analyze</span></>
+                        <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg><span>Analyze</span></>
                     )}
                 </button>
 
                 {(results || error) && (
-                    <button className="clear-btn" onClick={onClear} title="Clear results">✕</button>
+                    <button className="clear-btn" onClick={onClear} title="Clear results"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button>
                 )}
             </div>
 
             {/* Backend warning */}
             {backendStatus === 'disconnected' && (
                 <div className="alert alert-warning">
-                    ⚠️ Backend not reachable at localhost:8000. Start it with <code>python main.py</code>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg> Backend not reachable at localhost:8000. Start it with <code>python main.py</code>
                 </div>
             )}
 
@@ -354,13 +354,13 @@ function AnalysisView({ selectedFile, isAnalyzing, progress, results, error, bac
                         {/* Status Banner */}
                         <div className={`status-banner ${results.status === 'success' && results.vulnerabilities && results.vulnerabilities.length > 0 ? 'vulnerable' : results.status === 'error' ? 'error' : 'clean'}`}>
                             {results.status === 'success' && results.vulnerabilities && results.vulnerabilities.length > 0 && (
-                                <><span className="banner-icon">🛡️</span><span>Found {results.vulnerabilities.length} vulnerability issue(s)</span></>
+                                <><span className="banner-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg></span><span>Found {results.vulnerabilities.length} vulnerability issue(s)</span></>
                             )}
                             {results.status === 'success' && (!results.vulnerabilities || results.vulnerabilities.length === 0) && (
-                                <><span className="banner-icon">✅</span><span>{results.message || 'No vulnerabilities detected'}</span></>
+                                <><span className="banner-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg></span><span>{results.message || 'No vulnerabilities detected'}</span></>
                             )}
                             {results.status === 'error' && (
-                                <><span className="banner-icon">❌</span><span>{results.message || 'Analysis error'}</span></>
+                                <><span className="banner-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></svg></span><span>{results.message || 'Analysis error'}</span></>
                             )}
                         </div>
 
@@ -387,7 +387,7 @@ function AnalysisView({ selectedFile, isAnalyzing, progress, results, error, bac
                         {results.agentOutputs && results.agentOutputs.map((output, i) => (
                             <div key={i} className="agent-output">
                                 <div className="agent-header">
-                                    <span className="agent-icon">🤖</span>
+                                    <span className="agent-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" /><rect x="9" y="9" width="6" height="6" /><path d="M15 2v2" /><path d="M15 20v2" /><path d="M2 15h2" /><path d="M2 9h2" /><path d="M20 15h2" /><path d="M20 9h2" /><path d="M9 2v2" /><path d="M9 20v2" /></svg></span>
                                     <span className="agent-name">{output.agentName}</span>
                                 </div>
                                 <div
@@ -400,7 +400,7 @@ function AnalysisView({ selectedFile, isAnalyzing, progress, results, error, bac
                         {/* Patch Proposals */}
                         {results.patchProposals && results.patchProposals.length > 0 && (
                             <div className="patch-section">
-                                <h3 className="section-title">🔧 Suggested Patches</h3>
+                                <h3 className="section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px', verticalAlign: 'text-bottom' }}><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /></svg>Suggested Patches</h3>
                                 {results.patchProposals.map((patch, i) => (
                                     <div key={i} className="patch-card">
                                         <div className="patch-header">
@@ -435,7 +435,7 @@ function AnalysisView({ selectedFile, isAnalyzing, progress, results, error, bac
 
 // ─── Dashboard View ──────────────────────────────────────────────────────────
 
-function DashboardView({ vulnerabilities, criticalCount, highCount, totalCount, cleanCount, scanCount }: {
+function DashboardView({ vulnerabilities, criticalCount, highCount, totalCount, cleanCount: _cleanCount, scanCount }: {
     vulnerabilities: VulnerabilityData[];
     criticalCount: number;
     highCount: number;
@@ -578,7 +578,7 @@ function GraphView({ selectedFile }: { selectedFile: { path: string; name: strin
                     {loading ? (
                         <><div className="spinner" /><span>Loading...</span></>
                     ) : (
-                        <><span>🔄</span><span>Load Graph</span></>
+                        <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" /><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" /></svg><span>Load Graph</span></>
                     )}
                 </button>
                 {selectedFile && (
