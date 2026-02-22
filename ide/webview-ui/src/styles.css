@@ -10,12 +10,22 @@
     box-sizing: border-box;
 }
 
+html {
+    height: 100%;
+    overflow: hidden;
+}
+
 body {
     font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
     font-size: var(--vscode-font-size, 13px);
     background: var(--vscode-sideBar-background, #1e1e1e);
     color: var(--vscode-foreground, #cccccc);
-    height: 100vh;
+    height: 100%;
+    overflow: hidden;
+}
+
+#root {
+    height: 100%;
     overflow: hidden;
 }
 
@@ -25,7 +35,7 @@ body {
 
 .app {
     display: flex;
-    height: 100vh;
+    height: 100%;
     overflow: hidden;
 }
 
@@ -253,6 +263,8 @@ body {
 .file-icon {
     font-size: 14px;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
 }
 
 .file-chip {
@@ -353,6 +365,9 @@ body {
     font-size: 12px;
     line-height: 1.5;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .alert-warning {
@@ -475,6 +490,8 @@ body {
 
 .banner-icon {
     font-size: 16px;
+    display: flex;
+    align-items: center;
 }
 
 /* Vulnerability Cards */
@@ -597,6 +614,8 @@ body {
 
 .agent-icon {
     font-size: 14px;
+    display: flex;
+    align-items: center;
 }
 
 .markdown-body {
