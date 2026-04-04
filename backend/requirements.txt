@@ -7,3 +7,4 @@ cpgqls-client
 openai
 python-dotenv
 nest_asyncio
+neo4j

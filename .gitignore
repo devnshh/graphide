@@ -3,7 +3,7 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
+docs/
 # Python backend
 backend/__pycache__/
 backend/*.pyc

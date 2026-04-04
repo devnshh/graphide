@@ -1,8 +1,9 @@
 import json
 import asyncio
-import nest_asyncio
+import websockets
+import httpx
 from typing import List, Tuple, Any, Optional, Dict
-from cpgqls_client import CPGQLSClient, import_code_query, delete_query
+from cpgqls_client import import_code_query, delete_query
 
 class JoernException(Exception):
     """Custom exception for Joern-related errors"""
@@ -11,6 +12,7 @@ class JoernException(Exception):
 class JoernManager:
     """
     Manages interactions with Joern server for real-time backend service.
+    Implements async CPGQLS protocol client directly to avoid asyncio execution loop issues.
     """
     
     def __init__(self, endpoint: str = "localhost:8080"):
@@ -20,62 +22,84 @@ class JoernManager:
         Args:
             endpoint: Joern server endpoint (e.g., localhost:8080)
         """
-        self.endpoint = endpoint
-        self.client = None
-        # Patch asyncio to allow nested loops (critical for CPGQLSClient)
-        nest_asyncio.apply()
-        self._connect()
+        self.endpoint = endpoint.rstrip("/")
+        # We don't maintain a persistent connection because the CPGQLS protocol 
+        # typically handles one connection per query flow or session, 
+        # but for simplicity and robustness against timeouts/disconnects, 
+        # we will connect on demand for each query in this async implementation.
 
-    def _connect(self):
-        """Attempt to connect to the CPGQLS server"""
-        try:
-            self.client = CPGQLSClient(self.endpoint)
-        except Exception as e:
-            # Log but don't crash, allowing backend to start without Joern initially
-            print(f"Warning: Failed to connect to Joern server at {self.endpoint}: {str(e)}")
-            self.client = None
+    def _get_ws_endpoint(self) -> str:
+        return f"ws://{self.endpoint}/connect"
 
-    def _ensure_connected(self):
-        """Ensure we have a client before executing commands"""
-        if not self.client:
-            self._connect()
-        if not self.client:
-            raise JoernException(f"Joern server is not available at {self.endpoint}")
-        
+    def _get_query_endpoint(self) -> str:
+        return f"http://{self.endpoint}/query"
+
+    def _get_result_endpoint(self, uuid: str) -> str:
+        return f"http://{self.endpoint}/result/{uuid}"
+
     async def run_query(self, query: str) -> Tuple[bool, str]:
         """
-        Run a single Joern query.
-        
-        Args:
-            query: The CPGQL query to execute
-            
-        Returns:
-            Tuple containing success flag (bool) and output string
+        Run a single Joern query using async websockets and http.
+        Protocol:
+        1. Connect WS
+        2. Receive "connected"
+        3. POST /query
+        4. Wait for result UUID on WS
+        5. GET /result/{uuid}
         """
         try:
-            self._ensure_connected()
-            
-            # Run the blocking synchronous client.execute in a separate thread
-            # nest_asyncio handles the nested loop if execute() creates one
-            loop = asyncio.get_running_loop()
-            result = await loop.run_in_executor(None, lambda: self.client.execute(query))
-            
-            stdout = result.get("stdout", "")
-            stderr = result.get("stderr", "")
-            
-            if stderr:
-                # Some errors appear in stderr
-                raise JoernException(f"Joern internal error (stderr): {stderr}")
+            async with websockets.connect(self._get_ws_endpoint()) as websocket:
+                # 1. Wait for "connected" message
+                connected_msg = await websocket.recv()
+                if connected_msg != "connected":
+                    raise JoernException(f"Unexpected initial message from Joern: {connected_msg}")
 
-            if "Error" in stdout or "ConsoleException" in stdout:
-                return False, stdout
-            elif "List()" in stdout or "= empty iterator" in stdout:
-                # Valid execution, but empty result
-                return True, stdout
-            else:
-                return True, stdout
-                
+                # 2. POST the query
+                async with httpx.AsyncClient() as client:
+                    response = await client.post(self._get_query_endpoint(), json={"query": query})
+                    
+                    if response.status_code != 200:
+                        raise JoernException(f"Failed to post query: {response.text}")
+                    
+                    data = response.json()
+                    uuid = data.get("uuid")
+                    if not uuid:
+                        raise JoernException("No UUID returned from query submission")
+
+                # 3. Wait for completion signal on WS
+                # The server sends the result or notification on WS. 
+                # Actually CPGQLS client says: await ws_conn.recv()
+                # implementation details: server sends message when done.
+                await websocket.recv() 
+
+                # 4. GET the result
+                async with httpx.AsyncClient() as client:
+                    result_response = await client.get(self._get_result_endpoint(uuid))
+                    
+                    if result_response.status_code != 200:
+                        raise JoernException(f"Failed to retrieve result: {result_response.text}")
+                    
+                    json_body = result_response.json()
+                    stdout = json_body.get("stdout", "")
+                    stderr = json_body.get("stderr", "")
+
+                    if stderr:
+                         raise JoernException(f"Joern internal error (stderr): {stderr}")
+
+                    if "Error" in stdout or "ConsoleException" in stdout:
+                        return False, stdout
+                    elif "List()" in stdout or "= empty iterator" in stdout:
+                        return True, stdout
+                    else:
+                        return True, stdout
+
         except Exception as e:
+            # Check if it is a connection refused error
+            if "Connection refused" in str(e) or "Cannot connect" in str(e):
+                print(f"Warning: Joern server not reachable at {self.endpoint}")
+                # We return False but maybe we should raise? 
+                # For existing logic compatibility, we raise JoernException to be caught
+                raise JoernException(f"Joern server not reachable: {e}")
             raise JoernException(f"Failed to execute query: {str(e)}")
     
     async def load_project(self, input_path: str, project_name: str = "temp_project") -> str:
@@ -272,4 +296,3 @@ class JoernManager:
                 sliced_paths.append(slice_)
                 
         return sliced_paths
-

@@ -5,15 +5,20 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:webview": "vite",
     "build": "tsc -b && vite build",
+    "build:webview": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@neo4j-nvl/base": "^1.0.0",
+    "@neo4j-nvl/react": "^1.0.0",
     "@vscode/webview-ui-toolkit": "^1.4.0",
     "axios": "^1.13.4",
     "framer-motion": "^12.33.0",
     "lucide-react": "^0.563.0",
+    "marked": "^17.0.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

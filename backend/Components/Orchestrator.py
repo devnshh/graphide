@@ -4,11 +4,13 @@ from typing import Dict, Any, List, Optional
 try:
     from ..config import settings
     from .JoernManager import JoernManager
+    from .Neo4jManager import Neo4jManager
     from .Models import ScanResponse, ScanRequest, ChatResponse, ChatRequest, AgentOutput, SliceResponse, SliceRequest, MediaResponse
     from .AnalysisService import AnalysisService
 except ImportError:
     from config import settings
     from Components.JoernManager import JoernManager
+    from Components.Neo4jManager import Neo4jManager
     from Components.Models import ScanResponse, ScanRequest, ChatResponse, ChatRequest, AgentOutput, SliceResponse, SliceRequest, MediaResponse
     from Components.AnalysisService import AnalysisService
 
@@ -23,6 +25,11 @@ class Orchestrator:
     def __init__(self):
         self.joern_manager = JoernManager(
             endpoint=f"localhost:{settings.JOERN_PORT}"
+        )
+        self.neo4j_manager = Neo4jManager(
+            uri=settings.NEO4J_URI,
+            user=settings.NEO4J_USER,
+            password=settings.NEO4J_PASSWORD
         )
         self.sessions: Dict[str, Any] = {}
         self.analysis_service = AnalysisService(joern_url=f"localhost:{settings.JOERN_PORT}")
@@ -113,6 +120,17 @@ class Orchestrator:
                          "description": "Suggested Fix"
                      })
                  validation_status = {"passed": False, "errors": ["Vulnerability found"]}
+
+                 # Store CPG graph in Neo4j
+                 verified_slices = result.get("slices", [])
+                 if verified_slices and self.neo4j_manager.is_connected():
+                     scan_id = self.neo4j_manager.store_analysis_graph(
+                         file_path=request.filePath,
+                         verified_slices=verified_slices,
+                         vulnerabilities=vulnerabilities_list
+                     )
+                     if scan_id:
+                         logger.info(f"Graph stored in Neo4j with scan_id: {scan_id}")
             
             elif result["status"] == "clean":
                  agent_outputs.append(AgentOutput(
