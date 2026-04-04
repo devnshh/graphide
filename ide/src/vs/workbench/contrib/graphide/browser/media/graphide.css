@@ -1,10 +1,10 @@
 /*---------------------------------------------------------------------------------------------
- *  GraphIDE Panel Styles
- *  Follows VS Code design patterns: flat, dense, accessible
+ *  GraphIDE Panel Styles — Graphide Obsidian Design System
+ *  Flat, dense, accessible. Zero gradients. Zero glow. Zero purple.
  *--------------------------------------------------------------------------------------------*/
 
 /* ============================================================================
-   Design Tokens
+   Design Tokens — Obsidian System
    ============================================================================ */
 
 .graphide-panel {
@@ -15,53 +15,44 @@
     --graphide-space-lg: 16px;
     --graphide-space-xl: 24px;
 
-    /* ========== Colors (Design System) ========== */
-    /* Slate (Neutrals) */
-    --color-slate-100: #f1f5f9;
-    --color-slate-200: #e2e8f0;
-    --color-slate-300: #cbd5e1;
-    --color-slate-400: #94a3b8;
-    --color-slate-500: #64748b;
-    --color-slate-600: #475569;
-    --color-slate-700: #334155;
-    --color-slate-800: #1e293b;
-    --color-slate-900: #0f172a;
-    --color-slate-950: #020617;
+    /* ========== Obsidian Surfaces ========== */
+    --g-surface-0: #0A0A0B;
+    --g-surface-1: #0E0E0F;
+    --g-surface-2: #111113;
+    --g-surface-3: #1A1A1D;
+    --g-surface-4: #222225;
 
-    /* Cyan (Primary Brand) */
-    --color-cyan-200: #a5f3fc;
-    --color-cyan-300: #67e8f9;
-    --color-cyan-400: #22d3ee;
-    --color-cyan-500: #06b6d4;
-    --color-cyan-600: #0891b2;
-    --color-cyan-900: #164e63;
-    --color-cyan-950: #083344;
+    /* ========== Obsidian Borders ========== */
+    --g-border-primary: #1A1A1D;
+    --g-border-secondary: #2A2A2E;
 
-    /* Semantic Colors */
-    --color-rose-400: #fb7185;
-    --color-rose-500: #f43f5e;
-    --color-rose-950: #4c0519;
+    /* ========== Obsidian Text ========== */
+    --g-text-primary: #E8E8ED;
+    --g-text-secondary: #8B8B94;
+    --g-text-tertiary: #5A5A63;
+    --g-text-ghost: #3A3A3F;
 
-    --color-emerald-400: #34d399;
-    --color-emerald-500: #10b981;
+    /* ========== Obsidian Accent ========== */
+    --g-accent: #3B82F6;
+    --g-accent-dim: #2563EB;
+    --g-accent-ghost: rgba(59, 130, 246, 0.12);
 
-    --color-orange-300: #fdba74;
-    --color-orange-400: #fb923c;
+    /* ========== Severity ========== */
+    --g-critical: #DC2626;
+    --g-high: #EA580C;
+    --g-medium: #CA8A04;
+    --g-low: #2563EB;
+    --g-success: #16A34A;
 
-    --color-purple-400: #c084fc;
+    /* ========== UI Mapped Variables (legacy compat) ========== */
+    --graphide-bg: var(--g-surface-0);
+    --graphide-sidebar-bg: var(--g-surface-0);
+    --graphide-card-bg: var(--g-surface-1);
+    --graphide-border: var(--g-border-primary);
 
-    /* ========== UI Variables (Mapped) ========== */
-    --graphide-bg: #09090b;
-    /* Zinc 950 essentially */
-    --graphide-sidebar-bg: #18181b;
-    /* Zinc 900 */
-    --graphide-card-bg: #1e1e1e;
-    --graphide-border: rgba(30, 41, 59, 0.5);
-    /* Slate 800 / 50% */
+    --graphide-font-sans: ui-sans-serif, system-ui, -apple-system, sans-serif;
 
-    --graphide-font-sans: ui-sans-serif, system-ui, sans-serif;
-
-    /* ========== Density Tokens (Optimized) ========== */
+    /* ========== Density Tokens ========== */
     --graphide-row-height: 22px;
     --graphide-message-padding-v: 6px;
     --graphide-message-padding-h: 10px;
@@ -71,7 +62,7 @@
     height: 100%;
     width: 100%;
     background: var(--graphide-bg);
-    color: var(--color-slate-400);
+    color: var(--g-text-secondary);
     font-family: var(--graphide-font-sans);
     overflow: hidden;
 }
@@ -100,11 +91,10 @@
     align-items: center;
     padding: 0 8px;
     height: 35px;
-    border-bottom: 1px solid var(--vscode-panel-border);
+    border-bottom: 1px solid var(--g-border-primary);
     flex-shrink: 0;
 }
 
-/* Remove redundant title - panel already shows "ANALYZE CODE" in tab */
 .graphide-title {
     display: none;
 }
@@ -116,7 +106,7 @@
 }
 
 /* ============================================================================
-   Toolbar Actions (Compact, not hero buttons)
+   Toolbar Actions
    ============================================================================ */
 
 .graphide-toolbar {
@@ -124,7 +114,7 @@
     align-items: center;
     gap: 6px;
     padding: 6px 12px;
-    border-bottom: 1px solid var(--vscode-panel-border);
+    border-bottom: 1px solid var(--g-border-primary);
     flex-shrink: 0;
 }
 
@@ -135,39 +125,40 @@
     padding: 4px 8px;
     font-size: 12px;
     font-weight: 500;
-    color: var(--vscode-foreground);
+    color: var(--g-text-primary);
     background: transparent;
-    border: 1px solid var(--vscode-input-border, transparent);
+    border: 1px solid var(--g-border-secondary);
     border-radius: 4px;
     cursor: pointer;
     height: var(--graphide-row-height);
     line-height: 1;
+    transition: background 120ms ease-out;
 }
 
 .graphide-toolbar-btn:hover {
-    background: var(--vscode-toolbar-hoverBackground);
+    background: var(--g-surface-3);
 }
 
 .graphide-toolbar-btn:focus-visible {
-    outline: 2px solid var(--vscode-focusBorder);
+    outline: 2px solid var(--g-accent);
     outline-offset: -1px;
 }
 
-/* Primary action - demoted from hero blue to compact text-style */
+/* Primary action — solid accent */
 .graphide-toolbar-btn.primary {
-    background: transparent;
-    color: var(--vscode-textLink-foreground);
-    border: 1px solid color-mix(in srgb, var(--vscode-textLink-foreground) 40%, transparent);
+    background: var(--g-accent);
+    color: #ffffff;
+    border: 1px solid var(--g-accent);
     font-weight: 500;
 }
 
 .graphide-toolbar-btn.primary:hover {
-    background: var(--vscode-toolbar-hoverBackground);
-    border-color: var(--vscode-textLink-foreground);
+    background: var(--g-accent-dim);
+    border-color: var(--g-accent-dim);
 }
 
 /* ============================================================================
-   Icon Buttons (Clear, Settings, etc.)
+   Icon Buttons
    ============================================================================ */
 
 .graphide-icon-btn {
@@ -180,16 +171,18 @@
     background: transparent;
     border: none;
     border-radius: 4px;
-    color: var(--vscode-icon-foreground);
+    color: var(--g-text-tertiary);
     cursor: pointer;
+    transition: background 120ms ease-out, color 120ms ease-out;
 }
 
 .graphide-icon-btn:hover {
-    background: var(--vscode-toolbar-hoverBackground);
+    background: var(--g-surface-3);
+    color: var(--g-text-secondary);
 }
 
 .graphide-icon-btn:focus-visible {
-    outline: 2px solid var(--vscode-focusBorder);
+    outline: 2px solid var(--g-accent);
     outline-offset: -1px;
 }
 
@@ -210,14 +203,13 @@
 
 .graphide-message {
     padding: var(--graphide-message-padding-v) var(--graphide-message-padding-h);
-    font-size: var(--graphide-font-size-base);
-    line-height: var(--graphide-line-height);
-    border-radius: 8px;
-    transition: background-color 100ms ease-out;
+    font-size: 13px;
+    line-height: 1.5;
+    border-radius: 6px;
+    transition: background-color 120ms ease-out;
     margin: var(--graphide-space-sm) var(--graphide-space-md);
-    /* Chat box styling */
-    background: var(--vscode-editor-background);
-    border: 1px solid var(--vscode-panel-border);
+    background: var(--g-surface-1);
+    border: 1px solid var(--g-border-primary);
 }
 
 .graphide-message+.graphide-message {
@@ -228,10 +220,10 @@
     display: flex;
     align-items: center;
     gap: var(--graphide-space-sm);
-    font-size: var(--graphide-font-size-sm);
+    font-size: 11px;
     font-weight: 600;
     margin-bottom: var(--graphide-space-xs);
-    color: var(--vscode-foreground);
+    color: var(--g-text-primary);
 }
 
 .graphide-message-role .codicon {
@@ -241,31 +233,31 @@
 .graphide-message-content {
     white-space: pre-wrap;
     word-wrap: break-word;
-    color: var(--vscode-foreground);
+    color: var(--g-text-secondary);
     cursor: text;
 }
 
-/* Hover state for interactivity feedback */
+/* Hover state */
 .graphide-message:hover {
-    background: color-mix(in srgb, var(--vscode-list-hoverBackground) 50%, transparent);
+    background: var(--g-surface-2);
 }
 
-/* Focus state for keyboard navigation */
+/* Focus state */
 .graphide-message:focus-visible {
-    outline: 2px solid var(--vscode-focusBorder);
+    outline: 2px solid var(--g-accent);
     outline-offset: -2px;
 }
 
-/* User messages - blue tint with left accent */
+/* User messages - subtle accent tint with left accent */
 .graphide-message-user {
-    background: color-mix(in srgb, var(--vscode-textLink-foreground) 10%, var(--vscode-editor-background));
-    border-left: 3px solid var(--vscode-textLink-foreground);
+    background: var(--g-accent-ghost);
+    border-left: 3px solid var(--g-accent);
 }
 
-/* Assistant/System messages - neutral with accent */
+/* Assistant/System messages */
 .graphide-message-system {
-    background: var(--vscode-editorWidget-background);
-    border-left: 3px solid var(--vscode-descriptionForeground);
+    background: var(--g-surface-2);
+    border-left: 3px solid var(--g-text-ghost);
 }
 
 /* ============================================================================
@@ -278,28 +270,14 @@
 .graphide-message-content h4 {
     margin: var(--graphide-space-sm) 0 var(--graphide-space-xs);
     font-weight: 600;
-    color: var(--vscode-foreground);
+    color: var(--g-text-primary);
 }
 
-.graphide-message-content h1 {
-    font-size: 1.3em;
-}
+.graphide-message-content h1 { font-size: 1.3em; }
+.graphide-message-content h2 { font-size: 1.15em; }
+.graphide-message-content h3 { font-size: 1.05em; }
+.graphide-message-content h4 { font-size: 1em; margin-bottom: 2px; }
 
-.graphide-message-content h2 {
-    font-size: 1.15em;
-}
-
-.graphide-message-content h3 {
-    font-size: 1.05em;
-}
-
-.graphide-message-content h4 {
-    font-size: 1em;
-    margin-bottom: 2px;
-    /* Tighter for H4 */
-}
-
-/* Remove margin between header and list */
 .graphide-message-content h3+ul,
 .graphide-message-content h4+ul,
 .graphide-message-content h3+ol,
@@ -311,17 +289,11 @@
     margin: var(--graphide-space-xs) 0;
 }
 
-/* Remove vertical padding/margins from the very top and bottom elements to tighten the box */
-.graphide-message-content>*:first-child {
-    margin-top: 0 !important;
-}
-
-.graphide-message-content>*:last-child {
-    margin-bottom: 0 !important;
-}
+.graphide-message-content>*:first-child { margin-top: 0 !important; }
+.graphide-message-content>*:last-child { margin-bottom: 0 !important; }
 
 .graphide-message-content code {
-    background: var(--vscode-textCodeBlock-background);
+    background: var(--g-surface-3);
     padding: 2px 4px;
     border-radius: 3px;
     font-family: var(--vscode-editor-font-family);
@@ -329,7 +301,7 @@
 }
 
 .graphide-message-content pre {
-    background: var(--vscode-textCodeBlock-background);
+    background: var(--g-surface-3);
     padding: var(--graphide-space-sm);
     border-radius: 4px;
     overflow-x: auto;
@@ -344,31 +316,21 @@
 .graphide-message-content ul,
 .graphide-message-content ol {
     margin: 2px 0;
-    /* Reduced from 4px/xs */
     padding-left: 1.5em;
 }
 
-.graphide-message-content li {
-    margin: 0;
-    /* Tighten list items */
-}
-
-.graphide-message-content li p {
-    margin: 0;
-    /* Ensure paragraphs inside lists don't add spaced */
-}
+.graphide-message-content li { margin: 0; }
+.graphide-message-content li p { margin: 0; }
 
 .graphide-message-content strong {
     font-weight: 600;
-    color: var(--vscode-foreground);
+    color: var(--g-text-primary);
 }
 
-.graphide-message-content em {
-    font-style: italic;
-}
+.graphide-message-content em { font-style: italic; }
 
 .graphide-message-content a {
-    color: var(--vscode-textLink-foreground);
+    color: var(--g-accent);
     text-decoration: none;
 }
 
@@ -377,34 +339,34 @@
 }
 
 .graphide-message-content blockquote {
-    border-left: 3px solid var(--vscode-textBlockQuote-border);
+    border-left: 3px solid var(--g-border-secondary);
     padding-left: var(--graphide-space-sm);
     margin: var(--graphide-space-sm) 0;
-    color: var(--vscode-textBlockQuote-foreground);
+    color: var(--g-text-tertiary);
 }
 
 /* ============================================================================
-   Error & Warning States (Semantic styling)
+   Error & Warning States
    ============================================================================ */
 
 .graphide-message-error {
-    border-left: 2px solid var(--graphide-error-border);
-    background: var(--graphide-error-bg);
+    border-left: 2px solid var(--g-critical);
+    background: rgba(220, 38, 38, 0.06);
     padding-left: calc(var(--graphide-message-padding-h) - 2px);
 }
 
 .graphide-message-error .graphide-message-role {
-    color: var(--vscode-errorForeground);
+    color: var(--g-critical);
 }
 
 .graphide-message-warning {
-    border-left: 2px solid var(--graphide-warning-border);
-    background: var(--graphide-warning-bg);
+    border-left: 2px solid var(--g-medium);
+    background: rgba(202, 138, 4, 0.06);
     padding-left: calc(var(--graphide-message-padding-h) - 2px);
 }
 
 .graphide-message-warning .graphide-message-role {
-    color: var(--vscode-notificationsWarningIcon-foreground);
+    color: var(--g-medium);
 }
 
 /* ============================================================================
@@ -413,22 +375,22 @@
 
 .graphide-input-wrapper {
     padding: 8px 12px 12px;
-    border-top: 1px solid var(--vscode-panel-border);
+    border-top: 1px solid var(--g-border-primary);
     flex-shrink: 0;
 }
 
 .graphide-input-container {
     display: flex;
     gap: 6px;
-    background: var(--vscode-input-background);
-    border: 1px solid var(--vscode-input-border, transparent);
+    background: var(--g-surface-2);
+    border: 1px solid var(--g-border-secondary);
     border-radius: 6px;
     padding: 6px 8px;
     align-items: flex-end;
 }
 
 .graphide-input-container:focus-within {
-    border-color: var(--vscode-focusBorder);
+    border-color: var(--g-accent);
 }
 
 .graphide-input {
@@ -437,7 +399,7 @@
     border: none;
     outline: none;
     background: transparent;
-    color: var(--vscode-input-foreground);
+    color: var(--g-text-primary);
     font-family: var(--vscode-font-family);
     font-size: 13px;
     line-height: 1.4;
@@ -446,7 +408,7 @@
 }
 
 .graphide-input::placeholder {
-    color: var(--vscode-input-placeholderForeground);
+    color: var(--g-text-tertiary);
 }
 
 .graphide-send-btn {
@@ -459,28 +421,30 @@
     background: transparent;
     border: none;
     border-radius: 4px;
-    color: var(--vscode-icon-foreground);
+    color: var(--g-text-tertiary);
     cursor: pointer;
     flex-shrink: 0;
+    transition: background 120ms ease-out, color 120ms ease-out;
 }
 
 .graphide-send-btn:hover {
-    background: var(--vscode-toolbar-hoverBackground);
+    background: var(--g-surface-3);
+    color: var(--g-text-secondary);
 }
 
 .graphide-send-btn:focus-visible {
-    outline: 2px solid var(--vscode-focusBorder);
+    outline: 2px solid var(--g-accent);
     outline-offset: -1px;
 }
 
 .graphide-send-btn:disabled,
 .graphide-send-btn.disabled {
-    opacity: 0.5;
+    opacity: 0.4;
     cursor: not-allowed;
 }
 
 /* ============================================================================
-   Agent State Indicator (Issue 7: Mental Model Clarity)
+   Agent State Indicator
    ============================================================================ */
 
 .graphide-agent-status {
@@ -489,8 +453,8 @@
     gap: 6px;
     padding: 4px 8px;
     font-size: 11px;
-    color: var(--vscode-descriptionForeground);
-    background: var(--vscode-editorWidget-background);
+    color: var(--g-text-tertiary);
+    background: var(--g-surface-2);
     border-radius: 4px;
 }
 
@@ -498,15 +462,15 @@
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: var(--vscode-testing-iconPassed);
+    background: var(--g-success);
 }
 
 .graphide-agent-status.inactive .status-indicator {
-    background: var(--vscode-descriptionForeground);
+    background: var(--g-text-ghost);
 }
 
 .graphide-agent-status.error .status-indicator {
-    background: var(--vscode-errorForeground);
+    background: var(--g-critical);
 }
 
 /* ============================================================================
@@ -540,109 +504,64 @@
 .hc-black .graphide-send-btn:focus-visible,
 .hc-light .graphide-send-btn:focus-visible {
     outline-width: 2px;
-
 }
 
 /* ============================================================================
    File Chip (Attachment Style)
    ============================================================================ */
 
-.graphide-file-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 2px 8px;
-    margin: 4px 0;
-    background: var(--vscode-keybindingTable-headerBackground);
-    /* Subtle dark container */
-    border: 1px solid var(--vscode-widget-border);
-    border-radius: 12px;
-    color: var(--vscode-foreground);
-    text-decoration: none;
-    font-size: 12px;
-    cursor: pointer;
-    vertical-align: middle;
-    transition: all 0.2s ease;
-    max-width: 100%;
-}
-
-.graphide-file-chip:hover {
-    background: var(--vscode-toolbar-hoverBackground);
-    border-color: var(--vscode-focusBorder);
-    text-decoration: none;
-}
-
-.graphide-file-chip .codicon {
-    font-size: 14px;
-    /* Ensure icon size is consistent */
-    color: var(--vscode-symbolIcon-classForeground);
-    /* Use symbol color for icon */
-}
-
-/* Yellow/Function icon color style for {} */
-.graphide-file-chip .codicon-symbol-misc,
-.graphide-file-chip .codicon-json {
-    color: var(--vscode-symbolIcon-constantForeground);
-}
-
-/* ============================================================================
-   File Chip (Attachment Style)
-   ============================================================================ */
-
-.graphide-message-content a[href^="file:"],
-.graphide-file-chip {
+.graphide-file-chip,
+.graphide-message-content a[href^="file:"] {
     display: inline-flex;
     align-items: center;
     gap: 4px;
     padding: 2px 8px;
     margin: 0 4px;
-    background: var(--vscode-keybindingTable-headerBackground);
-    border: 1px solid var(--vscode-widget-border);
+    background: var(--g-surface-3);
+    border: 1px solid var(--g-border-secondary);
     border-radius: 6px;
-    color: var(--vscode-foreground) !important;
+    color: var(--g-text-primary) !important;
     text-decoration: none !important;
     font-size: 0.95em;
     cursor: pointer;
     vertical-align: middle;
-    transition: all 0.2s ease;
+    transition: background 120ms ease-out;
     line-height: 1.5;
 }
 
-.graphide-message-content a[href^="file:"]:hover,
-.graphide-file-chip:hover {
-    background: var(--vscode-toolbar-hoverBackground);
-    border-color: var(--vscode-focusBorder);
-    color: var(--vscode-foreground) !important;
+.graphide-file-chip:hover,
+.graphide-message-content a[href^="file:"]:hover {
+    background: var(--g-surface-4);
+    border-color: var(--g-border-secondary);
+    color: var(--g-text-primary) !important;
 }
 
-/* Icon styling within chip */
+.graphide-file-chip .codicon,
 .graphide-message-content a[href^="file:"] .codicon {
     font-size: 14px;
     margin-right: 4px;
     vertical-align: text-bottom;
 }
 
-/* JSON Icon Color */
+.graphide-file-chip .codicon-json,
 .graphide-message-content a[href^="file:"] .codicon-json {
-    color: var(--vscode-symbolIcon-constantForeground);
+    color: var(--g-medium);
 }
 
-/* File Icon Color */
+.graphide-file-chip .codicon-file,
 .graphide-message-content a[href^="file:"] .codicon-file {
-    color: var(--vscode-symbolIcon-textForeground);
+    color: var(--g-text-secondary);
 }
 
 /* ============================================================================
    Animations & Loading
    ============================================================================ */
 
-/* Fade In Up Animation for new messages */
 @keyframes graphideFadeInUp {
     from {
         opacity: 0;
-        transform: translateY(10px);
+        transform: translateY(6px);
     }
-
     to {
         opacity: 1;
         transform: translateY(0);
@@ -650,10 +569,10 @@
 }
 
 .graphide-message.animate-in {
-    animation: graphideFadeInUp 0.3s ease-out forwards;
+    animation: graphideFadeInUp 0.2s ease-out forwards;
 }
 
-/* Loading Dots (appearing/disappearing loop) */
+/* Loading Dots */
 .graphide-loading-dots {
     display: inline-flex;
     align-items: center;
@@ -664,32 +583,20 @@
     margin: 0 1px;
     font-size: 1.2em;
     line-height: 1;
+    color: var(--g-text-tertiary);
 }
 
-.graphide-loading-dots span:nth-child(2) {
-    animation-delay: 0.2s;
-}
-
-.graphide-loading-dots span:nth-child(3) {
-    animation-delay: 0.4s;
-}
+.graphide-loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.graphide-loading-dots span:nth-child(3) { animation-delay: 0.4s; }
 
 @keyframes graphideDotBlink {
-    0% {
-        opacity: 0.2;
-    }
-
-    20% {
-        opacity: 1;
-    }
-
-    100% {
-        opacity: 0.2;
-    }
+    0% { opacity: 0.2; }
+    20% { opacity: 1; }
+    100% { opacity: 0.2; }
 }
 
 /* ============================================================================
-   New Layout Structure (Revamp)
+   New Layout Structure
    ============================================================================ */
 
 .graphide-root {
@@ -697,7 +604,7 @@
     flex-direction: row;
     height: 100%;
     width: 100%;
-    background: var(--graphide-bg);
+    background: var(--g-surface-0);
     overflow: hidden;
     font-family: var(--graphide-font-sans);
 }
@@ -705,14 +612,13 @@
 /* --- Navigation Sidebar (Left Icon Bar) --- */
 .graphide-nav-sidebar {
     width: 48px;
-    /* w-12 */
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     padding: 16px 0;
-    background: var(--graphide-sidebar-bg);
-    border-right: 1px solid var(--graphide-border);
+    background: var(--g-surface-0);
+    border-right: 1px solid var(--g-border-primary);
     z-index: 20;
 }
 
@@ -724,29 +630,31 @@
     justify-content: center;
     position: relative;
     cursor: pointer;
-    color: var(--color-slate-500);
-    transition: color 0.15s;
+    color: var(--g-text-tertiary);
+    transition: color 150ms ease-out;
     background: transparent;
     border: none;
 }
 
 .graphide-nav-icon:hover {
-    color: var(--color-slate-300);
+    color: var(--g-text-secondary);
 }
 
 .graphide-nav-icon.active {
-    color: var(--color-cyan-400);
+    color: var(--g-accent);
 }
 
+/* Active indicator — flat bar, NO glow, NO box-shadow */
 .graphide-nav-icon.active::before {
     content: '';
     position: absolute;
     left: 0;
-    top: 0;
-    bottom: 0;
+    top: 8px;
+    bottom: 8px;
     width: 2px;
-    background: var(--color-cyan-400);
-    box-shadow: 0 0 8px rgba(34, 211, 238, 0.8);
+    background: var(--g-accent);
+    border-radius: 0 1px 1px 0;
+    /* NO box-shadow — zero glow */
 }
 
 /* --- Main Content Area --- */
@@ -755,21 +663,20 @@
     display: flex;
     flex-direction: column;
     min-width: 0;
-    background: var(--graphide-card-bg);
+    background: var(--g-surface-1);
 }
 
 .graphide-main-header {
     height: 40px;
-    /* h-10 */
-    background: var(--graphide-sidebar-bg);
-    border-bottom: 1px solid var(--graphide-border);
+    background: var(--g-surface-0);
+    border-bottom: 1px solid var(--g-border-primary);
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 16px;
     flex-shrink: 0;
     font-size: 12px;
-    color: var(--color-slate-300);
+    color: var(--g-text-secondary);
 }
 
 .graphide-viewport {
@@ -799,18 +706,17 @@
 }
 
 .graphide-card {
-    background: rgba(15, 23, 42, 0.5);
-    /* slate-900/50 */
-    border: 1px solid var(--graphide-border);
-    border-radius: 8px;
+    background: var(--g-surface-2);
+    border: 1px solid var(--g-border-primary);
+    border-radius: 6px;
     padding: 16px;
 }
 
 .graphide-metric-label {
-    font-size: 11px;
+    font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--color-slate-500);
+    color: var(--g-text-tertiary);
     margin-bottom: 4px;
     font-weight: 600;
 }
@@ -818,15 +724,15 @@
 .graphide-metric-value {
     font-size: 24px;
     font-weight: 700;
-    color: var(--color-slate-100);
+    color: var(--g-text-primary);
 }
 
 .graphide-table-container {
     flex: 1;
     overflow: auto;
-    border: 1px solid var(--graphide-border);
-    border-radius: 8px;
-    background: #1e1e1e;
+    border: 1px solid var(--g-border-primary);
+    border-radius: 6px;
+    background: var(--g-surface-1);
 }
 
 .graphide-table {
@@ -837,26 +743,26 @@
 }
 
 .graphide-table th {
-    background: var(--color-slate-900);
-    color: var(--color-slate-400);
+    background: var(--g-surface-0);
+    color: var(--g-text-tertiary);
     padding: 12px 24px;
     position: sticky;
     top: 0;
-    border-bottom: 1px solid var(--graphide-border);
+    border-bottom: 1px solid var(--g-border-primary);
     font-weight: 500;
     text-transform: uppercase;
-    font-size: 11px;
+    font-size: 10px;
     letter-spacing: 0.05em;
 }
 
 .graphide-table td {
     padding: 12px 24px;
-    border-bottom: 1px solid rgba(30, 41, 59, 0.5);
-    color: var(--color-slate-300);
+    border-bottom: 1px solid var(--g-border-primary);
+    color: var(--g-text-secondary);
 }
 
 .graphide-table tr:hover {
-    background: rgba(30, 41, 59, 0.3);
+    background: var(--g-surface-2);
 }
 
 /* --- Badge Components --- */
@@ -864,43 +770,41 @@
     display: inline-flex;
     align-items: center;
     padding: 2px 8px;
-    border-radius: 12px;
+    border-radius: 4px;
     font-size: 10px;
     text-transform: uppercase;
     font-weight: 600;
 }
 
 .graphide-badge.critical {
-    background: rgba(220, 38, 38, 0.1);
-    color: #ef4444;
-    /* red-500 */
-    border: 1px solid rgba(220, 38, 38, 0.2);
+    background: rgba(220, 38, 38, 0.08);
+    color: #DC2626;
+    border: 1px solid rgba(220, 38, 38, 0.15);
 }
 
 .graphide-badge.high {
-    background: rgba(249, 115, 22, 0.1);
-    color: var(--color-orange-400);
-    border: 1px solid rgba(249, 115, 22, 0.2);
+    background: rgba(234, 88, 12, 0.08);
+    color: #EA580C;
+    border: 1px solid rgba(234, 88, 12, 0.15);
 }
 
 .graphide-badge.medium {
-    background: rgba(234, 179, 8, 0.1);
-    color: var(--color-orange-300);
-    /* yellow-ish */
-    border: 1px solid rgba(234, 179, 8, 0.2);
+    background: rgba(202, 138, 4, 0.08);
+    color: #CA8A04;
+    border: 1px solid rgba(202, 138, 4, 0.15);
 }
 
 .graphide-badge.low {
-    background: rgba(148, 163, 184, 0.1);
-    color: var(--color-slate-400);
-    border: 1px solid rgba(148, 163, 184, 0.2);
+    background: rgba(59, 130, 246, 0.08);
+    color: #3B82F6;
+    border: 1px solid rgba(59, 130, 246, 0.15);
 }
 
 /* --- Dataflow Graph --- */
 .graphide-graph-container {
     width: 100%;
     height: 100%;
-    background: #0f1012;
+    background: var(--g-surface-0);
     position: relative;
     overflow: hidden;
 }
@@ -909,19 +813,20 @@
     position: absolute;
     width: 200px;
     padding: 12px;
-    background: var(--graphide-sidebar-bg);
-    border: 1px solid var(--graphide-border);
-    border-radius: 8px;
+    background: var(--g-surface-2);
+    border: 1px solid var(--g-border-primary);
+    border-radius: 6px;
     cursor: pointer;
     z-index: 10;
-    transition: all 0.2s;
+    transition: border-color 150ms ease-out, background 150ms ease-out;
 }
 
+/* Selected node — subtle border highlight, NO box-shadow, NO glow */
 .graphide-graph-node.selected {
-    border-color: var(--color-cyan-500);
-    box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+    border-color: var(--g-accent);
     z-index: 20;
-    background: var(--color-slate-800);
+    background: var(--g-surface-3);
+    /* NO box-shadow — zero glow */
 }
 
 .graphide-node-header {
@@ -934,19 +839,19 @@
 .graphide-node-icon {
     padding: 6px;
     border-radius: 4px;
-    background: var(--color-slate-900);
-    color: var(--color-slate-200);
+    background: var(--g-surface-0);
+    color: var(--g-text-secondary);
 }
 
 .graphide-node-label {
     font-size: 13px;
     font-weight: 500;
-    color: var(--color-slate-200);
+    color: var(--g-text-primary);
 }
 
 .graphide-node-type {
     font-size: 10px;
-    color: var(--color-slate-500);
+    color: var(--g-text-tertiary);
     text-transform: uppercase;
     font-weight: 700;
 }
@@ -954,11 +859,11 @@
 .graphide-taint-Label {
     margin-top: 8px;
     font-size: 10px;
-    background: rgba(244, 63, 94, 0.1);
-    color: var(--color-rose-400);
+    background: rgba(220, 38, 38, 0.08);
+    color: var(--g-critical);
     padding: 2px 6px;
     border-radius: 4px;
-    border: 1px solid rgba(244, 63, 94, 0.2);
+    border: 1px solid rgba(220, 38, 38, 0.15);
     display: inline-flex;
     align-items: center;
     gap: 4px;
@@ -967,8 +872,8 @@
 /* Sidebar Details Panel */
 .graphide-details-panel {
     width: 320px;
-    background: var(--graphide-sidebar-bg);
-    border-left: 1px solid var(--graphide-border);
+    background: var(--g-surface-0);
+    border-left: 1px solid var(--g-border-primary);
     display: flex;
     flex-direction: column;
     height: 100%;

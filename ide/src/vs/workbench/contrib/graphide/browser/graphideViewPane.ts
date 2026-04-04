@@ -131,7 +131,7 @@ export class GraphIDEViewPane extends ViewPane {
         // Brand Icon (Top)
         const brandIcon = dom.append(sidebar, dom.$('.graphide-nav-icon'));
         dom.append(brandIcon, dom.$('span.codicon.codicon-shield'));
-        brandIcon.style.color = 'var(--color-cyan-400)';
+        brandIcon.style.color = 'var(--g-accent)';
         brandIcon.style.marginBottom = '24px';
         brandIcon.style.cursor = 'default';
 
@@ -202,7 +202,7 @@ export class GraphIDEViewPane extends ViewPane {
         const title = dom.append(left, dom.$('span'));
         title.textContent = 'Graphide Enterprise';
         title.style.fontWeight = '500';
-        title.style.color = 'var(--color-slate-100)';
+        title.style.color = 'var(--g-text-primary)';
     }
 
     // --- Editor View (Existing Logic) ---
@@ -234,13 +234,13 @@ export class GraphIDEViewPane extends ViewPane {
         header.style.marginBottom = '24px';
         const h1 = dom.append(header, dom.$('h2'));
         h1.textContent = 'Security Findings';
-        h1.style.color = 'var(--color-slate-100)';
+        h1.style.color = 'var(--g-text-primary)';
         h1.style.fontSize = '20px';
         h1.style.fontWeight = '600';
 
         const sub = dom.append(header, dom.$('p'));
         sub.textContent = 'Real-time vulnerability detection and triage';
-        sub.style.color = 'var(--color-slate-500)';
+        sub.style.color = 'var(--g-text-tertiary)';
         sub.style.marginTop = '4px';
 
         // Calculate Metrics
@@ -284,7 +284,7 @@ export class GraphIDEViewPane extends ViewPane {
             const tdType = dom.append(tr, dom.$('td'));
             tdType.textContent = vuln.type + (vuln.cwe ? ` (${vuln.cwe})` : '');
             tdType.style.fontWeight = '500';
-            tdType.style.color = 'var(--color-slate-200)';
+            tdType.style.color = 'var(--g-text-primary)';
 
             // Location
             const tdLoc = dom.append(tr, dom.$('td'));
@@ -304,8 +304,8 @@ export class GraphIDEViewPane extends ViewPane {
         lbl.textContent = label;
         const val = dom.append(card, dom.$('.graphide-metric-value'));
         val.textContent = value;
-        if (variant === 'critical') val.style.color = 'var(--color-rose-400)';
-        if (variant === 'success') val.style.color = 'var(--color-emerald-400)';
+        if (variant === 'critical') val.style.color = 'var(--g-critical)';
+        if (variant === 'success') val.style.color = 'var(--g-success)';
     }
 
     // --- Graph View (New) ---
