@@ -177,6 +177,36 @@ export class GraphideWebviewProvider extends Disposable implements IWorkbenchCon
 				}
 				break;
 			}
+
+			case 'getRepositoryGraph': {
+				const { targetPath } = message;
+				try {
+					const params = new URLSearchParams();
+					if (targetPath) {
+						params.set('target_path', targetPath);
+					}
+
+					const context = await this.requestService.request({
+						type: 'GET',
+						url: `${BACKEND_URL}/repository-graph?${params.toString()}`,
+					}, CancellationToken.None);
+					const data = await asJson<any>(context);
+					webview.postMessage({
+						type: 'repositoryGraphData',
+						data,
+					});
+				} catch (error) {
+					const errorMessage = error instanceof Error ? error.message : String(error);
+					webview.postMessage({
+						type: 'repositoryGraphData',
+						data: {
+							status: 'error',
+							detail: `Failed to build repository graph: ${errorMessage}`,
+						}
+					});
+				}
+				break;
+			}
 		}
 	}
 

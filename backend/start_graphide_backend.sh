@@ -10,7 +10,7 @@ fi
 
 cd "$(dirname "$0")" || exit
 
-docker-compose up -d
+docker compose up -d
 if [ $? -ne 0 ]; then
     echo "Error: Failed to start Docker containers."
     exit 1

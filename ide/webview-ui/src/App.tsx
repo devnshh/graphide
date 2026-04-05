@@ -1,17 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { marked } from 'marked';
-import { InteractiveNvlWrapper } from '@neo4j-nvl/react';
-import type { Node, Relationship } from '@neo4j-nvl/base';
 import './styles.css';
-
-// VS Code API
-declare function acquireVsCodeApi(): {
-    postMessage(message: unknown): void;
-    getState(): any;
-    setState(state: unknown): void;
-};
-
-const vscode = acquireVsCodeApi();
+import { RepositoryGraphView } from './components/RepositoryGraphView';
+import { vscode } from './vscode';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -679,111 +670,7 @@ function MetricCard({ label, value, color }: { label: string; value: number; col
 // ─── Graph View ──────────────────────────────────────────────────────────────
 
 function GraphView({ selectedFile }: { selectedFile: { path: string; name: string } | null }) {
-    const [nodes, setNodes] = useState<Node[]>([]);
-    const [rels, setRels] = useState<Relationship[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [graphInfo, setGraphInfo] = useState<{ nodeCount: number; edgeCount: number } | null>(null);
-
-    const loadGraph = useCallback((filePath?: string) => {
-        setLoading(true);
-        vscode.postMessage({
-            type: 'getGraph',
-            filePath: filePath || undefined
-        });
-    }, []);
-
-    useEffect(() => {
-        const handleMessage = (event: MessageEvent) => {
-            const msg = event.data;
-            if (msg.type === 'graphData') {
-                setLoading(false);
-                const data = msg.data;
-                if (data && data.nodes) {
-                    setGraphInfo({ nodeCount: data.nodeCount || 0, edgeCount: data.edgeCount || 0 });
-
-                    const nvlNodes: Node[] = data.nodes.map((n: any) => ({
-                        id: n.id,
-                        captions: [{ value: n.caption || n.code || n.id }],
-                        color: n.type === 'source' ? '#DC2626'
-                            : n.type === 'sink' ? '#EA580C'
-                                : '#5A5A63',
-                        size: n.type === 'source' || n.type === 'sink' ? 28 : 18,
-                    }));
-
-                    const nvlRels: Relationship[] = data.relationships.map((r: any) => ({
-                        id: r.id,
-                        from: r.from,
-                        to: r.to,
-                        captions: [{ value: r.caption || 'FLOWS_TO' }],
-                    }));
-
-                    setNodes(nvlNodes);
-                    setRels(nvlRels);
-                }
-            }
-        };
-
-        window.addEventListener('message', handleMessage);
-        return () => window.removeEventListener('message', handleMessage);
-    }, []);
-
-    return (
-        <div className="graph-view">
-            <header className="view-header">
-                <div className="header-left">
-                    <h1 className="view-title">Dataflow Graph</h1>
-                    <span className="view-subtitle">Taint flow visualization</span>
-                </div>
-            </header>
-
-            <div className="graph-toolbar">
-                <button
-                    className="btn-ghost"
-                    onClick={() => loadGraph(selectedFile?.path)}
-                    disabled={loading}
-                >
-                    {loading ? (
-                        <><div className="spinner" /><span>Loading...</span></>
-                    ) : (
-                        <>{Icons.refresh}<span>Load Graph</span></>
-                    )}
-                </button>
-                {selectedFile && (
-                    <span className="graph-file-label">{selectedFile.name}</span>
-                )}
-                {graphInfo && (
-                    <span className="graph-stats">
-                        {graphInfo.nodeCount} nodes · {graphInfo.edgeCount} edges
-                    </span>
-                )}
-            </div>
-
-            <div className="graph-canvas">
-                {nodes.length > 0 ? (
-                    <InteractiveNvlWrapper
-                        nodes={nodes}
-                        rels={rels}
-                        nvlOptions={{
-                            allowDynamicMinZoom: true,
-                            layout: 'forceDirected',
-                            relationshipThreshold: 0.55,
-                        }}
-                    />
-                ) : (
-                    <div className="empty-state">
-                        <div className="empty-icon">{Icons.scatter}</div>
-                        <p className="empty-title">No graph data</p>
-                        <p className="empty-hint">
-                            {selectedFile
-                                ? 'Click "Load Graph" to fetch taint flow data'
-                                : 'Run an analysis first to populate graph data'
-                            }
-                        </p>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
+    return <RepositoryGraphView selectedFile={selectedFile} />;
 }
 
 export default App;

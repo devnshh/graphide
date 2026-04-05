@@ -8,10 +8,10 @@ from dotenv import load_dotenv
 load_dotenv()
 try:
     from .config import settings
-    from .routes import scan, chat, slice, media, verify, graph
+    from .routes import chat, graph, media, repository_graph, scan, slice, verify
 except ImportError:
     from config import settings
-    from routes import scan, chat, slice, media, verify, graph
+    from routes import chat, graph, media, repository_graph, scan, slice, verify
 
 # Configure logging
 logging.basicConfig(
@@ -42,6 +42,7 @@ app.include_router(slice.router, tags=["Slice"])
 app.include_router(media.router, tags=["Media"])
 app.include_router(verify.router, tags=["Verify"])
 app.include_router(graph.router, tags=["Graph"])
+app.include_router(repository_graph.router, tags=["Repository Graph"])
 
 @app.get("/")
 async def root():
