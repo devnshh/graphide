@@ -234,7 +234,7 @@ export function RepositoryGraphView({
                             selectedNodeId={selectedNodeId}
                         />
                     ) : (
-                        <div className="empty-state">
+                        <div className="empty-state repository-graph-empty-state">
                             <p className="empty-title">No repository graph loaded</p>
                             <p className="empty-hint">
                                 {selectedFile

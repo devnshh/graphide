@@ -1635,6 +1635,15 @@ body {
     height: 100%;
 }
 
+.repository-graph-empty-state {
+    position: absolute;
+    inset: 88px 24px 24px;
+    z-index: 1;
+    justify-content: center;
+    text-align: center;
+    pointer-events: none;
+}
+
 .repository-graph-sidecard {
     padding: var(--g-space-4);
     overflow: auto;
@@ -1770,6 +1779,10 @@ body {
 
     .repository-graph-stage-chrome {
         flex-direction: column;
+    }
+
+    .repository-graph-empty-state {
+        inset: 116px 20px 20px;
     }
 }
 
