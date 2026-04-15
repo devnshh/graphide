@@ -549,12 +549,7 @@ class RepositoryGraphManager:
         try:
             return file_path.read_text(encoding="utf-8")
         except UnicodeDecodeError:
-            try:
-                return file_path.read_text(encoding="latin-1")
-            except Exception:
-                return ""
-        except Exception:
-            return ""
+            return file_path.read_text(encoding="latin-1")
 
     def _relative_path(self, repo_root: Path, file_path: Path) -> str:
         return file_path.relative_to(repo_root).as_posix()

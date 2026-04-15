@@ -19,6 +19,9 @@ import { Disposable } from '../../../../base/common/lifecycle.js';
 import { WebviewViewPane } from '../../webviewView/browser/webviewViewPane.js';
 import { GraphideWebviewProvider } from './graphideWebviewProvider.js';
 import { registerWorkbenchContribution2, WorkbenchPhase } from '../../../common/contributions.js';
+import { ServicesAccessor } from '../../../../platform/instantiation/common/instantiation.js';
+
+const GRAPHIDE_VIEW_TYPE = GraphideWebviewProvider.VIEW_TYPE;
 
 // Register the GraphIDE icon
 const graphideViewIcon = registerIcon('graphide-view-icon', Codicon.hubot, localize('graphideViewIcon', 'View icon of the Graphide panel.'));
@@ -36,7 +39,7 @@ const VIEW_CONTAINER = Registry.as<IViewContainersRegistry>(ViewExtensions.ViewC
 
 // Register the view as a webview view (renders React app)
 Registry.as<IViewsRegistry>(ViewExtensions.ViewsRegistry).registerViews([{
-	id: 'graphide.panel',
+	id: GRAPHIDE_VIEW_TYPE,
 	name: localize2('graphidePanel', 'Graphide'),
 	ctorDescriptor: new SyncDescriptor(WebviewViewPane),
 	canToggleVisibility: true,
@@ -50,11 +53,14 @@ Registry.as<IViewsRegistry>(ViewExtensions.ViewsRegistry).registerViews([{
 // Register the webview provider (resolves React content into the webview)
 registerWorkbenchContribution2(GraphideWebviewProvider.ID, GraphideWebviewProvider, WorkbenchPhase.AfterRestored);
 
-// Register the "Analyze" command
-CommandsRegistry.registerCommand('graphide.analyze', async (accessor) => {
+const openGraphidePanel = async (accessor: ServicesAccessor): Promise<void> => {
 	const viewsService = accessor.get(IViewsService);
-	await viewsService.openView('graphide.panel', true);
-});
+	await viewsService.openView(GRAPHIDE_VIEW_TYPE, true);
+};
+
+// Register the commands that surface the Graphide panel
+CommandsRegistry.registerCommand('graphide.analyze', openGraphidePanel);
+CommandsRegistry.registerCommand('graphide.focus', openGraphidePanel);
 
 // Register Status Bar Contribution
 class GraphIDEStatusBarContribution extends Disposable implements IWorkbenchContribution {

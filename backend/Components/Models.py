@@ -1,5 +1,9 @@
+from typing import Any, Dict, List, Literal, Optional
+
 from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
+
+ResponseStatus = Literal["success", "error", "processing"]
+ChatStage = Literal["Q", "D", "KB", "Report", "General"]
 
 # ============================================================================
 # Shared Models
@@ -16,12 +20,22 @@ class FileContext(BaseModel):
     content: str
     language: str
 
+
+class PatchProposal(BaseModel):
+    code: str
+    description: str
+
+
+class ValidationStatus(BaseModel):
+    passed: bool
+    errors: List[str]
+
 # ============================================================================
 # API Request Models
 # ============================================================================
 
 class ScanRequest(BaseModel):
-    filePath: str # List of file paths to scan
+    filePath: str
     language: str
     intent: str
     codeRange: Optional[CodeRange] = None
@@ -31,16 +45,16 @@ class ChatRequest(BaseModel):
     query: str
     context: Optional[Dict[str, Any]] = None
     files: Optional[List[FileContext]] = None
-    sessionId: str 
-    stage: str # "Q", "D", "KB", "Report", "General"
+    sessionId: str
+    stage: ChatStage
 
 class SliceRequest(BaseModel):
     code: str
-    query: str # CPG Query
+    query: str
     filePath: str
 
 class MediaRequest(BaseModel):
-    flowchart_data: Dict[str, Any] # Data needed to generate the flowchart
+    flowchart_data: Dict[str, Any]
     vulnerability_id: str
 
 class VerifyRequest(BaseModel):
@@ -58,16 +72,15 @@ class AgentOutput(BaseModel):
     metadata: Optional[Dict[str, Any]] = None
 
 class StandardResponse(BaseModel):
-    status: str # "success", "error"
+    status: ResponseStatus
     message: Optional[str] = None
     data: Optional[Dict[str, Any]] = None
 
 class ScanResponse(StandardResponse):
-    status: str  # "success", "error", "processing"
     agentOutputs: Optional[List[AgentOutput]] = None
-    patchProposals: Optional[List[dict]] = None
-    vulnerabilities: Optional[List[dict]] = None
-    validationStatus: Optional[dict] = None
+    patchProposals: Optional[List[PatchProposal]] = None
+    vulnerabilities: Optional[List[Dict[str, Any]]] = None
+    validationStatus: Optional[ValidationStatus] = None
 
 
 class ChatResponse(StandardResponse):

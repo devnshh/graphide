@@ -1,18 +1,42 @@
 import logging
 import os
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List
 try:
     from ..config import settings
     from .JoernManager import JoernManager
     from .Neo4jManager import Neo4jManager
-    from .Models import ScanResponse, ScanRequest, ChatResponse, ChatRequest, AgentOutput, SliceResponse, SliceRequest, MediaResponse
+    from .Models import (
+        AgentOutput,
+        ChatRequest,
+        ChatResponse,
+        MediaResponse,
+        PatchProposal,
+        ScanRequest,
+        ScanResponse,
+        SliceRequest,
+        SliceResponse,
+        ValidationStatus,
+    )
     from .AnalysisService import AnalysisService
+    from .Utils import read_file_content
 except ImportError:
     from config import settings
     from Components.JoernManager import JoernManager
     from Components.Neo4jManager import Neo4jManager
-    from Components.Models import ScanResponse, ScanRequest, ChatResponse, ChatRequest, AgentOutput, SliceResponse, SliceRequest, MediaResponse
+    from Components.Models import (
+        AgentOutput,
+        ChatRequest,
+        ChatResponse,
+        MediaResponse,
+        PatchProposal,
+        ScanRequest,
+        ScanResponse,
+        SliceRequest,
+        SliceResponse,
+        ValidationStatus,
+    )
     from Components.AnalysisService import AnalysisService
+    from Components.Utils import read_file_content
 
 logger = logging.getLogger("graphide.orchestrator")
 
@@ -49,10 +73,9 @@ class Orchestrator:
             content = ""
             if os.path.exists(request.filePath):
                 if os.path.isdir(request.filePath):
-                    content = "" # AnalysisService will handle the directory copy
+                    content = ""
                 else:
-                    with open(request.filePath, 'r') as f:
-                        content = f.read()
+                    content = read_file_content(request.filePath)
             else:
                  return ScanResponse(status="error", message=f"File not found on backend: {request.filePath}")
 
@@ -66,11 +89,7 @@ class Orchestrator:
             
             agent_outputs = []
             
-            # Add Log Output first or last? Last is better effectively.
-            # But if error, it's the only thing.
-            
             if result["status"] == "error":
-                 # Even on error, return the log
                  agent_outputs.append(AgentOutput(
                      agentName="Graphide System",
                      markdownOutput=f"#### Analysis Failed\n{result.get('message')}\n\n#### Analysis Log\n{log_md}",
@@ -82,15 +101,12 @@ class Orchestrator:
                      agentOutputs=agent_outputs
                  )
             
-            patch_proposals = []
-            validation_status = {"passed": True, "errors": []}
+            patch_proposals: List[PatchProposal] = []
+            validation_status = ValidationStatus(passed=True, errors=[])
 
             if result["status"] == "vulnerable":
                  explanation_data = result.get("explanation", {})
-                 # Handle raw text or structured
                  if isinstance(explanation_data, list) and len(explanation_data) > 0:
-                     # If Gemini returned a list of objects, take the first one or aggregate
-                     # For now, we assume the first object contains the main analysis
                      explanation_data = explanation_data[0]
 
                  if isinstance(explanation_data, dict):
@@ -104,9 +120,6 @@ class Orchestrator:
                      reasoning = ""
                      vulnerabilities_list = []
 
-                 # 1. Main Vulnerability Report
-                 # User requested logs BEFORE explanation
-                 # Use tighter spacing and consistent headers
                  final_md = f"#### Analysis Log\n{log_md}\n\n#### Vulnerability Detected\n{text}\n\n#### Fix Reasoning\n{reasoning}"
                  
                  agent_outputs.append(AgentOutput(
@@ -115,13 +128,14 @@ class Orchestrator:
                      metadata={"stage": "Scan", "slices": result.get("slices")}
                  ))
                  if patch_code:
-                     patch_proposals.append({
-                         "code": patch_code,
-                         "description": "Suggested Fix"
-                     })
-                 validation_status = {"passed": False, "errors": ["Vulnerability found"]}
+                     patch_proposals.append(
+                         PatchProposal(code=patch_code, description="Suggested Fix")
+                     )
+                 validation_status = ValidationStatus(
+                     passed=False,
+                     errors=["Vulnerability found"],
+                 )
 
-                 # Store CPG graph in Neo4j
                  verified_slices = result.get("slices", [])
                  if verified_slices and self.neo4j_manager.is_connected():
                      scan_id = self.neo4j_manager.store_analysis_graph(
@@ -160,10 +174,7 @@ class Orchestrator:
         Since specific OnDemand agents are removed, this routes general queries to Model D or returns a default.
         """
         logger.info(f"Chat request for stage: {request.stage}")
-        
-        # We can route "General" chat to Model D if it supports it, or just return a placeholder.
-        # User instructions implied stripping OnDemand and focusing on the Analysis Flow.
-        
+
         return ChatResponse(
             status="success",
             agent_outputs=[AgentOutput(
@@ -179,20 +190,19 @@ class Orchestrator:
         """
         logger.info(f"Slicing request for file: {request.filePath}")
         
-        status, result = await self.joern_manager.run_query(request.query)
+        success, result = await self.joern_manager.run_query(request.query)
         
-        if status.name == "SUCCESSFUL":
+        if success:
             return SliceResponse(
                 status="success",
                 slices=[{"raw": result}],
                 message="Slicing successful"
             )
-        else:
-             return SliceResponse(
-                status="error",
-                slices=[],
-                message=f"Joern query failed: {result}"
-            )
+        return SliceResponse(
+            status="error",
+            slices=[],
+            message=f"Joern query failed: {result}"
+        )
 
     def handle_media(self, flowchart_data: Dict) -> MediaResponse:
         """

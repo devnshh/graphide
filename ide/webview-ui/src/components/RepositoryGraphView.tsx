@@ -2,8 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { RepositorySigmaGraph } from './RepositorySigmaGraph';
 import {
     DEFAULT_REPOSITORY_GRAPH_FILTERS,
+    isRepositoryGraphDataMessage,
 } from '../lib/repositoryGraph';
-import type { RepositoryGraphFilters, RepositoryGraphResponse } from '../lib/repositoryGraph';
+import type {
+    RepositoryGraphFilters,
+    RepositoryGraphResponse,
+    RepositorySelection,
+} from '../lib/repositoryGraph';
 import { vscode } from '../vscode';
 
 function FilterToggle({
@@ -29,7 +34,7 @@ function FilterToggle({
 export function RepositoryGraphView({
     selectedFile,
 }: {
-    selectedFile: { path: string; name: string } | null;
+    selectedFile: RepositorySelection | null;
 }) {
     const [graph, setGraph] = useState<RepositoryGraphResponse | null>(null);
     const [loading, setLoading] = useState(false);
@@ -52,17 +57,17 @@ export function RepositoryGraphView({
     }, [loading, selectedFile]);
 
     useEffect(() => {
-        const handleMessage = (event: MessageEvent) => {
+        const handleMessage = (event: MessageEvent<unknown>) => {
             const message = event.data;
-            if (message.type !== 'repositoryGraphData') {
+            if (!isRepositoryGraphDataMessage(message)) {
                 return;
             }
 
+            const payload = message.data;
             setLoading(false);
-            const payload = message.data as RepositoryGraphResponse & { detail?: string };
-            if (!payload || payload.status === 'error') {
+            if (payload.status === 'error') {
                 setGraph(null);
-                setError(payload?.detail || payload?.truncatedReason || 'Failed to load repository graph.');
+                setError(payload.detail || 'Failed to load repository graph.');
                 return;
             }
 
@@ -73,19 +78,6 @@ export function RepositoryGraphView({
         window.addEventListener('message', handleMessage);
         return () => window.removeEventListener('message', handleMessage);
     }, []);
-
-    useEffect(() => {
-        setSelectedNodeId(null);
-        setQuery('');
-        setError(null);
-        setInspectorOpen(false);
-    }, [selectedFile?.path]);
-
-    useEffect(() => {
-        if (selectedNodeId) {
-            setInspectorOpen(true);
-        }
-    }, [selectedNodeId]);
 
     const selectedNode = useMemo(() => {
         if (!graph || !selectedNodeId) {
@@ -114,6 +106,13 @@ export function RepositoryGraphView({
             ...current,
             [key]: !current[key],
         }));
+    }, []);
+
+    const handleSelectNode = useCallback((nodeId: string | null) => {
+        setSelectedNodeId(nodeId);
+        if (nodeId) {
+            setInspectorOpen(true);
+        }
     }, []);
 
     return (
@@ -199,7 +198,7 @@ export function RepositoryGraphView({
                         <button
                             className={`graph-search-result ${selectedNodeId === node.id ? 'active' : ''}`}
                             key={node.id}
-                            onClick={() => setSelectedNodeId(node.id)}
+                            onClick={() => handleSelectNode(node.id)}
                             type="button"
                         >
                             <span className="graph-search-result-title">{node.properties.name}</span>
@@ -230,7 +229,7 @@ export function RepositoryGraphView({
                             filters={filters}
                             graphData={graph}
                             inspectorOpen={inspectorOpen}
-                            onSelectNode={setSelectedNodeId}
+                            onSelectNode={handleSelectNode}
                             selectedNodeId={selectedNodeId}
                         />
                     ) : (

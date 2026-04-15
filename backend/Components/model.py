@@ -1,13 +1,14 @@
 import json
 from enum import Enum
-from typing import List, Dict, Tuple, Any, Optional, Union
+from typing import Any, Dict, List
 import requests
 
 
-class Model(Enum):
-    """Enum of supported LLM types"""
-    DEEPSEEK = 1
-    VLLM = 2
+class Model(str, Enum):
+    """Supported LLM backends."""
+
+    DEEPSEEK = "deepseek"
+    VLLM = "vllm"
 
 
 class LLMManager:

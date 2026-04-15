@@ -49,58 +49,48 @@ class JoernManager:
         """
         try:
             async with websockets.connect(self._get_ws_endpoint()) as websocket:
-                # 1. Wait for "connected" message
                 connected_msg = await websocket.recv()
                 if connected_msg != "connected":
                     raise JoernException(f"Unexpected initial message from Joern: {connected_msg}")
 
-                # 2. POST the query
                 async with httpx.AsyncClient() as client:
                     response = await client.post(self._get_query_endpoint(), json={"query": query})
-                    
+
                     if response.status_code != 200:
                         raise JoernException(f"Failed to post query: {response.text}")
-                    
+
                     data = response.json()
                     uuid = data.get("uuid")
                     if not uuid:
                         raise JoernException("No UUID returned from query submission")
 
-                # 3. Wait for completion signal on WS
-                # The server sends the result or notification on WS. 
-                # Actually CPGQLS client says: await ws_conn.recv()
-                # implementation details: server sends message when done.
-                await websocket.recv() 
+                await websocket.recv()
 
-                # 4. GET the result
                 async with httpx.AsyncClient() as client:
                     result_response = await client.get(self._get_result_endpoint(uuid))
-                    
+
                     if result_response.status_code != 200:
                         raise JoernException(f"Failed to retrieve result: {result_response.text}")
-                    
+
                     json_body = result_response.json()
                     stdout = json_body.get("stdout", "")
                     stderr = json_body.get("stderr", "")
 
                     if stderr:
-                         raise JoernException(f"Joern internal error (stderr): {stderr}")
+                        raise JoernException(f"Joern internal error (stderr): {stderr}")
 
                     if "Error" in stdout or "ConsoleException" in stdout:
                         return False, stdout
-                    elif "List()" in stdout or "= empty iterator" in stdout:
+                    if "List()" in stdout or "= empty iterator" in stdout:
                         return True, stdout
-                    else:
-                        return True, stdout
+                    return True, stdout
 
-        except Exception as e:
-            # Check if it is a connection refused error
-            if "Connection refused" in str(e) or "Cannot connect" in str(e):
-                print(f"Warning: Joern server not reachable at {self.endpoint}")
-                # We return False but maybe we should raise? 
-                # For existing logic compatibility, we raise JoernException to be caught
-                raise JoernException(f"Joern server not reachable: {e}")
-            raise JoernException(f"Failed to execute query: {str(e)}")
+        except ConnectionRefusedError as exc:
+            raise JoernException(f"Joern server not reachable at {self.endpoint}") from exc
+        except JoernException:
+            raise
+        except Exception as exc:
+            raise JoernException(f"Failed to execute query against {self.endpoint}: {exc}") from exc
     
     async def load_project(self, input_path: str, project_name: str = "temp_project") -> str:
         """
@@ -113,7 +103,7 @@ class JoernManager:
         Returns:
             Output logs from the import
         """
-        # Ensure we are not overwriting an existing project by trying to delete it first (best effort)
+        # Delete any existing project before importing the new one.
         await self.delete_project(project_name, strict=False)
 
         import_cmd = import_code_query(input_path, project_name)
@@ -151,15 +141,14 @@ class JoernManager:
 
     async def run_batch_queries(self, queries: List[str]) -> Tuple[bool, List[Any]]:
         """
-        Run a list of queries. If any fail, returns False.
-        The last query result is usually what we care about in the Joern flow, 
-        but we return all outputs just in case.
+        Run a list of queries.
+        Raises JoernException as soon as one query fails.
         """
         results = []
         for q in queries:
             success, output = await self.run_query(q)
             if not success:
-                return False, results # Abort early
+                raise JoernException(f"Batch query failed: {output}")
             results.append(output)
         return True, results
 
@@ -175,13 +164,10 @@ class JoernManager:
             Tuple (Success, Slices List)
         """
         if not queries:
-            return False, []
+            raise JoernException("No queries provided for Joern path extraction")
 
-        # Run setup queries (all except last)
         setup_queries = queries[:-1]
-        success, _ = await self.run_batch_queries(setup_queries)
-        if not success:
-            return False, []
+        await self.run_batch_queries(setup_queries)
 
         # Modify and run the last query
         reachability_query = queries[-1]
@@ -200,39 +186,26 @@ class JoernManager:
         final_query = reachability_query + json_transform
         
         success, json_output = await self.run_query(final_query)
-        
+
         if not success:
-            print(f"DEBUG: Joern Query Failed.\nQuery: {final_query}\nOutput: {json_output}")
-            return False, []
-            
-        # Parse output
+            raise JoernException(f"Joern query returned an error: {json_output}")
+
+        if '"""' in json_output:
+            parts = json_output.split('"""')
+            if len(parts) < 2:
+                raise JoernException(f"Unexpected Joern JSON output format: {json_output}")
+            clean_json = parts[1]
+        else:
+            clean_json = json_output
+
+        if not clean_json.strip():
+            return True, []
+
         try:
-            # Clean up the output string to get pure JSON
-            # Joern outputs: val res12: String = """[ ... ]"""
-            # We need to extract what's inside """ ... """
-            if '"""' in json_output:
-                parts = json_output.split('"""')
-                if len(parts) >= 2:
-                    clean_json = parts[1]
-                else:
-                    return False, [] # Unexpected format
-            else:
-                # Sometimes it might just be the string if formatted differently
-                clean_json = json_output
-
-            # If it is empty result "[ ]" or empty string
-            if not clean_json.strip():
-                return True, [] 
-                
             paths_data = json.loads(clean_json)
-            
-        except json.JSONDecodeError:
-            # This usually means Joern output something non-JSON or empty
-            return False, []
-        except Exception:
-            return False, []
+        except json.JSONDecodeError as exc:
+            raise JoernException(f"Failed to parse Joern JSON output: {json_output}") from exc
 
-        # Slice the code
         return True, self._map_paths_to_code(source_code, paths_data)
 
     async def run_script(self, script_path: str, params: Dict[str, str]) -> Tuple[bool, str]:
@@ -260,19 +233,20 @@ class JoernManager:
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE
             )
-            
+
             stdout, stderr = await process.communicate()
-            
+
             if process.returncode != 0:
                 error_msg = stderr.decode().strip()
                 print(f"[JoernManager] Script failed: {error_msg}")
                 return False, error_msg
-                
+
             return True, stdout.decode().strip()
-            
-        except Exception as e:
-            print(f"[JoernManager] Exception running script: {e}")
-            return False, str(e)
+
+        except FileNotFoundError as exc:
+            raise JoernException(f"Joern CLI not found: {exc}") from exc
+        except OSError as exc:
+            raise JoernException(f"Failed to launch Joern CLI: {exc}") from exc
 
     def _map_paths_to_code(self, source_code: str, paths_json: List[List[Dict]]) -> List[List[Dict]]:
         """
@@ -285,7 +259,6 @@ class JoernManager:
             slice_ = []
             for node in path_trace:
                 line_num = node.get("line_number")
-                # Valildate line number
                 if isinstance(line_num, int) and 0 < line_num <= len(source_lines):
                     slice_.append({
                         "id": node.get("id"),

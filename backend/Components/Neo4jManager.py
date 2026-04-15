@@ -83,87 +83,77 @@ class Neo4jManager:
             scan_id: Unique ID for this scan's graph data
         """
         if not self.driver:
-            print("[Neo4jManager] Not connected, skipping graph storage.")
-            return ""
+            raise RuntimeError("Neo4j driver is not connected")
 
         scan_id = str(uuid.uuid4())[:8]
 
-        try:
-            with self.driver.session() as session:
-                for path_idx, path in enumerate(verified_slices):
-                    if not path:
-                        continue
+        with self.driver.session() as session:
+            for path_idx, path in enumerate(verified_slices):
+                if not path:
+                    continue
 
-                    # Determine vulnerability info for this path
-                    vuln_type = "unknown"
-                    severity = "medium"
-                    if vulnerabilities and path_idx < len(vulnerabilities):
-                        vuln = vulnerabilities[path_idx]
-                        vuln_type = vuln.get("type", "unknown")
-                        severity = vuln.get("severity", "medium")
+                vuln_type = "unknown"
+                severity = "medium"
+                if vulnerabilities and path_idx < len(vulnerabilities):
+                    vuln = vulnerabilities[path_idx]
+                    vuln_type = vuln.get("type", "unknown")
+                    severity = vuln.get("severity", "medium")
 
-                    prev_node_id = None
+                prev_node_id = None
 
-                    for node in path:
-                        node_uid = f"{scan_id}_{node.get('id', 'unknown')}"
-                        line = node.get("line_number", 0)
-                        code = node.get("code", "")
+                for node in path:
+                    node_uid = f"{scan_id}_{node.get('id', 'unknown')}"
+                    line = node.get("line_number", 0)
+                    code = node.get("code", "")
 
-                        # Determine node type based on position
-                        if node == path[0]:
-                            node_type = "source"
-                        elif node == path[-1]:
-                            node_type = "sink"
-                        else:
-                            node_type = "intermediate"
+                    if node == path[0]:
+                        node_type = "source"
+                    elif node == path[-1]:
+                        node_type = "sink"
+                    else:
+                        node_type = "intermediate"
 
-                        # Create node
+                    session.run(
+                        """
+                        MERGE (n:CodeNode {nodeId: $nodeId})
+                        SET n.code = $code,
+                            n.file = $file,
+                            n.line = $line,
+                            n.type = $nodeType,
+                            n.scanId = $scanId,
+                            n.vulnType = $vulnType,
+                            n.severity = $severity
+                        """,
+                        nodeId=node_uid,
+                        code=code,
+                        file=file_path,
+                        line=line,
+                        nodeType=node_type,
+                        scanId=scan_id,
+                        vulnType=vuln_type,
+                        severity=severity
+                    )
+
+                    if prev_node_id:
                         session.run(
                             """
-                            MERGE (n:CodeNode {nodeId: $nodeId})
-                            SET n.code = $code,
-                                n.file = $file,
-                                n.line = $line,
-                                n.type = $nodeType,
-                                n.scanId = $scanId,
-                                n.vulnType = $vulnType,
-                                n.severity = $severity
+                            MATCH (a:CodeNode {nodeId: $fromId})
+                            MATCH (b:CodeNode {nodeId: $toId})
+                            MERGE (a)-[r:FLOWS_TO]->(b)
+                            SET r.scanId = $scanId,
+                                r.pathIndex = $pathIdx
                             """,
-                            nodeId=node_uid,
-                            code=code,
-                            file=file_path,
-                            line=line,
-                            nodeType=node_type,
+                            fromId=prev_node_id,
+                            toId=node_uid,
                             scanId=scan_id,
-                            vulnType=vuln_type,
-                            severity=severity
+                            pathIdx=path_idx
                         )
 
-                        # Create edge from previous node
-                        if prev_node_id:
-                            session.run(
-                                """
-                                MATCH (a:CodeNode {nodeId: $fromId})
-                                MATCH (b:CodeNode {nodeId: $toId})
-                                MERGE (a)-[r:FLOWS_TO]->(b)
-                                SET r.scanId = $scanId,
-                                    r.pathIndex = $pathIdx
-                                """,
-                                fromId=prev_node_id,
-                                toId=node_uid,
-                                scanId=scan_id,
-                                pathIdx=path_idx
-                            )
+                    prev_node_id = node_uid
 
-                        prev_node_id = node_uid
-
-            print(f"[Neo4jManager] Stored graph for scan {scan_id}: "
-                  f"{len(verified_slices)} paths from {file_path}")
-            return scan_id
-
-        except Exception as e:
-            print(f"[Neo4jManager] Error storing graph: {e}")
-            return ""
+        print(f"[Neo4jManager] Stored graph for scan {scan_id}: "
+              f"{len(verified_slices)} paths from {file_path}")
+        return scan_id
 
     def get_graph(self, file_path: Optional[str] = None,
                   scan_id: Optional[str] = None) -> Dict[str, Any]:
@@ -178,115 +168,105 @@ class Neo4jManager:
             dict with 'nodes' and 'relationships' arrays for NVL
         """
         if not self.driver:
-            return {"nodes": [], "relationships": []}
+            raise RuntimeError("Neo4j driver is not connected")
 
-        try:
-            with self.driver.session() as session:
-                # Build query based on filters
-                if scan_id:
-                    result = session.run(
-                        """
-                        MATCH (n:CodeNode {scanId: $scanId})
-                        OPTIONAL MATCH (n)-[r:FLOWS_TO]->(m:CodeNode {scanId: $scanId})
-                        RETURN n, r, m
-                        """,
-                        scanId=scan_id
-                    )
-                elif file_path:
-                    result = session.run(
-                        """
-                        MATCH (n:CodeNode {file: $file})
-                        OPTIONAL MATCH (n)-[r:FLOWS_TO]->(m:CodeNode {file: $file})
-                        RETURN n, r, m
-                        """,
-                        file=file_path
-                    )
-                else:
-                    # Return all (with limit)
-                    result = session.run(
-                        """
-                        MATCH (n:CodeNode)
-                        OPTIONAL MATCH (n)-[r:FLOWS_TO]->(m:CodeNode)
-                        RETURN n, r, m
-                        LIMIT 200
-                        """
-                    )
+        with self.driver.session() as session:
+            if scan_id:
+                result = session.run(
+                    """
+                    MATCH (n:CodeNode {scanId: $scanId})
+                    OPTIONAL MATCH (n)-[r:FLOWS_TO]->(m:CodeNode {scanId: $scanId})
+                    RETURN n, r, m
+                    """,
+                    scanId=scan_id
+                )
+            elif file_path:
+                result = session.run(
+                    """
+                    MATCH (n:CodeNode {file: $file})
+                    OPTIONAL MATCH (n)-[r:FLOWS_TO]->(m:CodeNode {file: $file})
+                    RETURN n, r, m
+                    """,
+                    file=file_path
+                )
+            else:
+                result = session.run(
+                    """
+                    MATCH (n:CodeNode)
+                    OPTIONAL MATCH (n)-[r:FLOWS_TO]->(m:CodeNode)
+                    RETURN n, r, m
+                    LIMIT 200
+                    """
+                )
 
-                # Build NVL-compatible format
-                nodes_map = {}
-                relationships = []
+            nodes_map = {}
+            relationships = []
 
-                for record in result:
-                    n = record["n"]
-                    r = record["r"]
-                    m = record["m"]
+            for record in result:
+                n = record["n"]
+                r = record["r"]
+                m = record["m"]
 
-                    # Add source node
-                    n_id = n["nodeId"]
-                    if n_id not in nodes_map:
-                        nodes_map[n_id] = {
-                            "id": n_id,
-                            "caption": n.get("code", "")[:60],
-                            "code": n.get("code", ""),
-                            "file": n.get("file", ""),
-                            "line": n.get("line", 0),
-                            "type": n.get("type", "intermediate"),
-                            "vulnType": n.get("vulnType", ""),
-                            "severity": n.get("severity", ""),
-                            "scanId": n.get("scanId", ""),
+                n_id = n["nodeId"]
+                if n_id not in nodes_map:
+                    nodes_map[n_id] = {
+                        "id": n_id,
+                        "caption": n.get("code", "")[:60],
+                        "code": n.get("code", ""),
+                        "file": n.get("file", ""),
+                        "line": n.get("line", 0),
+                        "type": n.get("type", "intermediate"),
+                        "vulnType": n.get("vulnType", ""),
+                        "severity": n.get("severity", ""),
+                        "scanId": n.get("scanId", ""),
+                    }
+
+                if m is not None and r is not None:
+                    m_id = m["nodeId"]
+                    if m_id not in nodes_map:
+                        nodes_map[m_id] = {
+                            "id": m_id,
+                            "caption": m.get("code", "")[:60],
+                            "code": m.get("code", ""),
+                            "file": m.get("file", ""),
+                            "line": m.get("line", 0),
+                            "type": m.get("type", "intermediate"),
+                            "vulnType": m.get("vulnType", ""),
+                            "severity": m.get("severity", ""),
+                            "scanId": m.get("scanId", ""),
                         }
+                    relationships.append({
+                        "id": f"{n_id}_to_{m_id}",
+                        "from": n_id,
+                        "to": m_id,
+                        "caption": "FLOWS_TO",
+                    })
 
-                    # Add target node + relationship
-                    if m is not None and r is not None:
-                        m_id = m["nodeId"]
-                        if m_id not in nodes_map:
-                            nodes_map[m_id] = {
-                                "id": m_id,
-                                "caption": m.get("code", "")[:60],
-                                "code": m.get("code", ""),
-                                "file": m.get("file", ""),
-                                "line": m.get("line", 0),
-                                "type": m.get("type", "intermediate"),
-                                "vulnType": m.get("vulnType", ""),
-                                "severity": m.get("severity", ""),
-                                "scanId": m.get("scanId", ""),
-                            }
-                        relationships.append({
-                            "id": f"{n_id}_to_{m_id}",
-                            "from": n_id,
-                            "to": m_id,
-                            "caption": "FLOWS_TO",
-                        })
-
-                return {
-                    "nodes": list(nodes_map.values()),
-                    "relationships": relationships
-                }
-
-        except Exception as e:
-            print(f"[Neo4jManager] Error querying graph: {e}")
-            return {"nodes": [], "relationships": []}
+            return {
+                "nodes": list(nodes_map.values()),
+                "relationships": relationships
+            }
 
     def clear_graph(self, file_path: Optional[str] = None,
                     scan_id: Optional[str] = None):
         """Remove graph data from Neo4j."""
         if not self.driver:
-            return
+            raise RuntimeError("Neo4j driver is not connected")
 
-        try:
-            with self.driver.session() as session:
-                if scan_id:
-                    session.run(
-                        "MATCH (n:CodeNode {scanId: $scanId}) DETACH DELETE n",
-                        scanId=scan_id
-                    )
-                elif file_path:
-                    session.run(
-                        "MATCH (n:CodeNode {file: $file}) DETACH DELETE n",
-                        file=file_path
-                    )
-        except Exception as e:
-            print(f"[Neo4jManager] Error clearing graph: {e}")
+        if not scan_id and not file_path:
+            raise ValueError("Either scan_id or file_path must be provided")
+
+        with self.driver.session() as session:
+            if scan_id:
+                session.run(
+                    "MATCH (n:CodeNode {scanId: $scanId}) DETACH DELETE n",
+                    scanId=scan_id
+                )
+            if file_path:
+                session.run(
+                    "MATCH (n:CodeNode {file: $file}) DETACH DELETE n",
+                    file=file_path
+                )
 
     def close(self):
         """Close the Neo4j driver."""

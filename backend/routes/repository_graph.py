@@ -1,9 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query
 
-try:
-    from ..Components.RepositoryGraphManager import RepositoryGraphManager
-except ImportError:
-    from Components.RepositoryGraphManager import RepositoryGraphManager
+from ..Components.RepositoryGraphManager import RepositoryGraphManager
 
 
 router = APIRouter()

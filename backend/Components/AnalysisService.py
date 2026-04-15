@@ -2,6 +2,7 @@ import sys
 import os
 import json
 import requests
+from contextlib import suppress
 from typing import Dict, Any, List
 try:
     from google import genai
@@ -17,9 +18,11 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 try:
     from .config import settings
     from .JoernManager import JoernManager, JoernException
+    from .Utils import read_file_content, parse_json_safely
 except ImportError:
     from config import settings
     from Components.JoernManager import JoernManager, JoernException
+    from Components.Utils import read_file_content, parse_json_safely
 
 class AnalysisService:
     """
@@ -115,19 +118,16 @@ class AnalysisService:
         if is_directory:
             print(f"[Analysis] Copying directory {file_path} to {target_host_path}")
             shutil.copytree(file_path, target_host_path)
-            # For container path, it's just the base name mapped
-            target_container_path = os.path.join(container_dir, base_name)
         else:
             # Single file
-            # If code_content is provided (e.g. from IDE unsaved buffer), use it.
-            # Otherwise read from file.
             if not code_content and os.path.exists(file_path):
-                with open(file_path, 'r') as f:
-                    code_content = f.read()
-            
-            with open(target_host_path, "w") as f:
+                code_content = read_file_content(file_path)
+
+            with open(target_host_path, "w", encoding="utf-8") as f:
                 f.write(code_content)
-            target_container_path = os.path.join(container_dir, base_name)
+
+        # For the container path, the mounted location is the base name.
+        target_container_path = os.path.join(container_dir, base_name)
 
         try:
             # --- Step 0: Static Analysis (Rule-Based) ---
@@ -149,22 +149,23 @@ class AnalysisService:
             }
             
             print(f"[Analysis] Executing Static Analysis Script on {target_host_path}...")
-            success, script_out = await self.joern.run_script(script_path, params)
+            _success, _script_out = await self.joern.run_script(script_path, params)
 
             print(output_json_path)
             
             static_findings = []
             if os.path.exists(output_json_path):
                 try:
-                    with open(output_json_path, 'r') as f:
-                        static_findings = json.load(f)
-                except:
-                    pass
-                # Cleanup output file
-                try:
-                    os.remove(output_json_path)
-                except:
-                    pass
+                    parsed_findings = parse_json_safely(read_file_content(output_json_path))
+                    if isinstance(parsed_findings, list):
+                        static_findings = parsed_findings
+                    elif isinstance(parsed_findings, dict):
+                        static_findings = parsed_findings.get("findings", [])
+                except Exception:
+                    static_findings = []
+                finally:
+                    with suppress(OSError):
+                        os.remove(output_json_path)
             
             logs.append(f"Step 1 Complete: Found {len(static_findings)} suspicious targets via static rules.")
             
@@ -279,11 +280,8 @@ class AnalysisService:
             logs.append(f"Error: Unexpected exception: {e}")
             return {"status": "error", "message": f"Unexpected Error: {e}", "logs": logs}
         finally:
-            try:
-                # Call async
+            with suppress(Exception):
                 await self.joern.reset_session(project_name)
-            except:
-                pass
 
     def _call_model_api(self, url: str, prompt: str) -> str:
         """
@@ -292,30 +290,18 @@ class AnalysisService:
         """
         print(f"DEBUG: Calling Model API at {url}")
         try:
-            # Try a standard payload structure
             payload = {
                 "prompt": prompt,
-                "query": prompt, # redundancy for safety
-                "messages": [{"role": "user", "content": prompt}] # Chat completion style
+                "query": prompt,
+                "messages": [{"role": "user", "content": prompt}],
             }
-            
-            # Note: The provided URLs are for specific models, they might be proxying a chat endpoint
-            # or expecting a specific schema. We send multiple fields to hit one that works.
-            
-            # Litng/VLLM often expects standard OpenAI format:
-            # {"messages": [...], "model": "something"}
-            # We add a default model field just in case it is required.
-            # payload["model"] = "default" # Model D rejects "default"
 
-
-            # print(f"DEBUG: Payload: {json.dumps(payload)}") 
             response = requests.post(url, json=payload, timeout=60, verify=False)
             print(f"DEBUG: Response Status: {response.status_code}")
             response.raise_for_status()
             
             data = response.json()
             
-            # Try to extract text from common response formats
             if "response" in data:
                 return data["response"]
             if "output" in data:
@@ -325,7 +311,6 @@ class AnalysisService:
             if "data" in data and "answer" in data["data"]: # AgentClient style
                 return data["data"]["answer"]
             
-            # If plain text response
             return str(data)
             
         except requests.exceptions.Timeout:
@@ -427,28 +412,15 @@ Ensure the output is valid JSON.
                 
                 # Clean up markdown code blocks if present
                 clean_text = response_text.strip()
-                if clean_text.startswith("```"):
-                    import re
-                    # Match ```json or ``` at start
-                    clean_text = re.sub(r"^```\w*\s*", "", clean_text)
-                    # Match ``` at end
-                    clean_text = re.sub(r"\s*```$", "", clean_text)
-                
                 try:
-                    return json.loads(clean_text)
-                except json.JSONDecodeError:
-                    print("[Analysis] Gemini returned invalid JSON (initial parse failed). Attempting regex extraction.")
-                    import re
-                    # Try to find the outermost JSON object
-                    match = re.search(r'\{.*\}', clean_text, re.DOTALL)
-                    if match:
-                        try:
-                            return json.loads(match.group(0))
-                        except:
-                            pass
-                    
-                    # Fallback: treat as raw markdown
-                    return {"explanation": response_text, "vulnerabilities": [], "patch_code": "", "fix_reasoning": ""}
+                    parsed_response = parse_json_safely(clean_text)
+                    if isinstance(parsed_response, dict):
+                        return parsed_response
+                except Exception:
+                    pass
+
+                # Fallback: treat as raw markdown
+                return {"explanation": response_text, "vulnerabilities": [], "patch_code": "", "fix_reasoning": ""}
                     
             except Exception as e:
                 print(f"[Analysis] Gemini Error: {e}. Falling back to Model D.")
@@ -474,15 +446,11 @@ Output format: JSON with keys "explanation", "patch_code", "fix_reasoning", "vul
 """
         response_text = self._call_model_api(self.d_url, prompt)
         
-        # Parse JSON from response
         try:
-            # Try finding JSON block
-            import re
-            match = re.search(r'\{.*\}', response_text, re.DOTALL)
-            if match:
-                return json.loads(match.group(0))
-            return json.loads(response_text)
-        except:
+            parsed_response = parse_json_safely(response_text)
+            if isinstance(parsed_response, dict):
+                return parsed_response
+        except Exception:
             return {"explanation": response_text, "patch_code": "", "fix_reasoning": "", "vulnerabilities": []}
             
     def _extract_queries_from_text(self, text: str) -> List[str]:
@@ -491,58 +459,46 @@ Output format: JSON with keys "explanation", "patch_code", "fix_reasoning", "vul
         Handles standard JSON and Python-dict style (single quotes) responses.
         """
         try:
-            # 1. Try to find content within ```json ... ``` or just ``` ... ```
-            import re
-            match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL)
-            if match:
-                clean_text = match.group(1)
-            else:
-                # 2. Try to find outermost braces if no code block
-                start = text.find("{")
-                end = text.rfind("}")
-                if start != -1 and end != -1:
-                    clean_text = text[start:end+1]
-                else:
-                    clean_text = text
+            parsed_text = parse_json_safely(text)
+            if isinstance(parsed_text, dict):
+                queries = parsed_text.get("queries", [])
+                if isinstance(queries, list):
+                    return [q for q in queries if isinstance(q, str)]
+                return []
+            if isinstance(parsed_text, list):
+                return [q for q in parsed_text if isinstance(q, str)]
+        except Exception:
+            pass
 
-            # 3. Handle Single Quotes (Invalid JSON but common LLM output)
-            # If we see 'queries': ['...', '...'], replace single quotes with double quotes
-            # ONLY if it looks like there are no double quotes wrapping the content
-            if "'" in clean_text and '"' not in clean_text:
-                 clean_text = clean_text.replace("'", '"')
-            
-            # 4. Try parsing as JSON first
+        try:
+            import re
+            cleaned = text
+            if "'" in cleaned and '"' not in cleaned:
+                cleaned = cleaned.replace("'", '"')
+
             try:
-                data = json.loads(clean_text)
+                data = json.loads(cleaned)
                 return data.get("queries", [])
             except json.JSONDecodeError:
-                # 5. Fallback: Try ast.literal_eval for Python-style dicts
                 import ast
                 try:
-                    # Fix: If LLM outputs {"queries": ['...']} (mixed quotes), ast.literal_eval handles it fine as a dict
-                    data = ast.literal_eval(clean_text)
+                    data = ast.literal_eval(cleaned)
                     if isinstance(data, dict):
                         return data.get("queries", [])
-                except:
-                    pass
-                
-                # 6. Fallback: Heuristic replacement for mixed quotes cases
-                # e.g. "queries": ['val1', 'val2']
-                # We try to replace single quotes with double quotes specifically inside the list
-                try:
-                    # Very rough heuristic: replace ' with " if it looks like a list item
-                    normalized = clean_text.replace("'", '"')
-                    data = json.loads(normalized)
-                    return data.get("queries", [])
-                except:
+                except Exception:
                     pass
 
-                # 7. Fallback: Regex extraction as last resort
-                queries = re.findall(r"['\"](.*?)['\"]", clean_text)
+                try:
+                    normalized = cleaned.replace("'", '"')
+                    data = json.loads(normalized)
+                    return data.get("queries", [])
+                except Exception:
+                    pass
+
+                queries = re.findall(r"['\"](.*?)['\"]", cleaned)
                 # Filter out keys like 'queries'
                 return [q for q in queries if q != "queries"]
 
         except Exception as e:
             print(f"DEBUG: Error extracting queries: {e}")
             return []
-

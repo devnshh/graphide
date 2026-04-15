@@ -3,8 +3,10 @@ Graph route — Retrieves CPG vulnerability graphs from Neo4j
 for visualization in the frontend NVL renderer.
 """
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
 from typing import Optional
+
+from ..Components.Orchestrator import orchestrator
 
 router = APIRouter()
 
@@ -20,9 +22,6 @@ async def get_graph(
     Returns:
         { nodes: [...], relationships: [...] }
     """
-    from Components.Orchestrator import Orchestrator
-
-    orchestrator = Orchestrator()
     if not orchestrator.neo4j_manager or not orchestrator.neo4j_manager.is_connected():
         return {
             "status": "error",
@@ -51,10 +50,12 @@ async def clear_graph(
     scan_id: Optional[str] = Query(None),
 ):
     """Clear graph data from Neo4j."""
-    from Components.Orchestrator import Orchestrator
+    if not orchestrator.neo4j_manager or not orchestrator.neo4j_manager.is_connected():
+        raise HTTPException(status_code=503, detail="Neo4j is not connected")
 
-    orchestrator = Orchestrator()
-    if orchestrator.neo4j_manager:
+    try:
         orchestrator.neo4j_manager.clear_graph(file_path=file_path, scan_id=scan_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     return {"status": "success", "message": "Graph cleared"}
