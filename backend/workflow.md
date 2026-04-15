@@ -1,4 +1,4 @@
-Below is the **mechanically precise execution plan** that turns the previously defined **CPGxLLM-D VSCode-fork IDE on OnDemand** into a **deliverable hackathon system**.
+Below is the **mechanically precise execution plan** that turns the previously defined **CPGxLLM-D Graphide IDE on OnDemand** into a **deliverable hackathon system**.
 
 Nothing here is invented. Everything is directly mapped to the architecture you approved earlier.
 
@@ -9,7 +9,7 @@ Nothing here is invented. Everything is directly mapped to the architecture you 
 ### **A. Client / IDE Layer**
 
 ```
-VSCode Fork
+Graphide
  ├─ File Watcher
  ├─ “Analyse File(s)” Command on Analysis Panel
  ├─ Gutter Line Highlighter
@@ -40,7 +40,7 @@ API Gateway
 3. LLMxCPG Model - D (Detection & Patching)
 4. Knowledge Agent (CVE/CWE Enrichment)
 5. NanoBanana Agent (Flowchart/Dataflow Explanation)
-6. Patch Applier Agent (Local VSCode Integration)
+6. Patch Applier Agent (Local Graphide Integration)
 7. LLM Agent (Report Chat)
 ```
 
@@ -72,7 +72,7 @@ CVE/CWE Knowledge Base (Vector DB)
 
 # **2. System Flow (End-to-End)**
 
-1. Developer clicks the analyse button next to the chat button and picks file(s) to send to the backend for scanning in the **VSCode fork**
+1. Developer clicks the analyse button next to the chat button and picks file(s) to send to the backend for scanning in **Graphide**
 2. Backend calls the **CHAT API** that is hosted on OnDemand via /chat
 3. CHAT API calls the **LLMxCPG Model - Q** and passes in the code and returns the CPG Query back to the CHAT API then back to the backend
 4. Backend sends code + CPG Query to **Joern** on OnDemand
@@ -81,7 +81,7 @@ CVE/CWE Knowledge Base (Vector DB)
 7. Sliced code along with the vulnerability evaluation is sent to the NanoBanana agent /chat to generate a flowchart type vulnerability explanation showing data flow and where the code is flawed, generated flowchart image is stored on the backend
 8. The flowchart image stored on the backend is sent to the Media API on OnDemand which sends the image back to the backend and then it is displayed to the frontend via a button press
 9. The generated code patch is sent to the AST Patch Verifier tool on OnDemand (uses OpenAPISchema on OnDemand for the custom tool)
-10. The verified code patch is sent back to the backend and then sent to the Patch Applier Agent(locally) which applies the patches in a typical native vscode way
+10. The verified code patch is sent back to the backend and then sent to the Patch Applier Agent(locally) which applies the patches in a typical native Graphide way
 11. code patch and explanation along with sliced code via /chat is sent to the Report Builder tool on OnDemand via /chat to generate a descriptive pdf on the vulnerability, fix and the patch
 12. Finally the generated pdf is sent to a LLM agent on OnDemand via /chat through which the user can chat about the pdf and the vulnerabilities in the code, ask questions etc.
 
@@ -89,10 +89,10 @@ CVE/CWE Knowledge Base (Vector DB)
 
 # **3. Component Decomposition**
 
-### **IDE (VSCode Fork)**
+### **IDE (Graphide)**
 
 *   **Analysis/Chat UI**: Trigger for Scan, Display for Flowchart & PDF.
-*   **Patch Applier Agent**: Local agent running within VSCode to apply verified patches directly to the source code.
+*   **Patch Applier Agent**: Local agent running within Graphide to apply verified patches directly to the source code.
 
 ---
 
@@ -135,7 +135,7 @@ CVE/CWE Knowledge Base (Vector DB)
 # **4. Phased Execution**
 
 ### **Phase 1: Core Analysis Loop**
-*   VSCode -> /scan -> Backend
+*   Graphide -> /scan -> Backend
 *   Backend -> /chat -> Model Q
 *   Model Q -> /slice -> Joern
 
