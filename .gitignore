@@ -29,3 +29,7 @@ backend/*.md
 # ide/ (Commented out to include the frontend in the repo)
 .vscode/
 *.log
+sidepanel_redesign.md
+graphide_project_report.md
+INSTALL.md
+test_vulnerable.c
